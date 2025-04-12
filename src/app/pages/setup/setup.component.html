@@ -51,6 +51,53 @@
         </div>
       </div>
 
+      <!-- Activations Section -->
+      <div class="mb-3">
+        <h3>Activations</h3>
+        @if (getActivationsForIdentity(key.publicKey).length > 0) {
+        <div class="activations-list">
+          @for (activation of getActivationsForIdentity(key.publicKey); track getActivationId(activation)) {
+          <div class="activation-item">
+            <div class="activation-details">
+              <div><strong>Client:</strong> 
+                <span class="mono-text">{{ activation.clientPubkey === 'pending' ? 'Not yet connected' : activation.clientPubkey }}</span>
+              </div>
+              <div><strong>Activated:</strong> {{ formatDate(activation.activatedDate) }}</div>
+              <div class="permissions-container">
+                <strong>Permissions:</strong>
+                
+                @if (isEditingPermissions(activation)) {
+                <div class="permissions-edit">
+                  <input 
+                    type="text" 
+                    [ngModel]="permissionsInput()[getActivationId(activation)]" 
+                    (ngModelChange)="permissionsInput.update(p => ({ ...p, [getActivationId(activation)]: $event }))" 
+                    class="permissions-input" 
+                    placeholder="E.g., sign_event,get_public_key" />
+                  <div class="edit-actions">
+                    <button class="save-button" (click)="savePermissions(activation)">Save</button>
+                    <button class="cancel-button" (click)="cancelEditPermissions(activation)">Cancel</button>
+                  </div>
+                </div>
+                } @else {
+                <div class="permissions-display">
+                  <span class="permissions-text">{{ activation.permissions }}</span>
+                  <button class="edit-button" (click)="startEditingPermissions(activation)">Edit</button>
+                </div>
+                }
+              </div>
+            </div>
+            <div class="activation-actions">
+              <button class="delete-button" (click)="deleteActivation(activation)">Delete</button>
+            </div>
+          </div>
+          }
+        </div>
+        } @else {
+        <p class="text-center">No activations for this identity.</p>
+        }
+      </div>
+
       <div class="text-right">
         <button class="danger" (click)="deleteKey(key.publicKey)">Delete</button>
       </div>

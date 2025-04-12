@@ -11,6 +11,7 @@ import { v2 } from 'nostr-tools/nip44';
 export const STORAGE_KEYS = {
   SIGNER_KEYS: 'nostria-signer-keys',
   SIGNER_KEY: 'nostria-signer-key',
+  SIGNER_CLIENTS: 'nostria-signer-clients',
   RELAYS: 'nostria-relays'
 };
 
@@ -18,6 +19,14 @@ export interface NostrAccount {
   publicKey: string;
   privateKey: string;
   secret?: string;
+}
+
+export interface ClientActivation {
+  clientPubkey: string;  // Public key of the nostr client connecting to the signer
+  pubkey: string;        // Public key of the client identity
+  activatedDate: string; // ISO date string when activation occurred
+  secret: string;        // UUID used for activation
+  permissions: string;   // Comma separated list of permissions
 }
 
 @Injectable({
@@ -34,6 +43,9 @@ export class NostrService {
   publicKey = '';
 
   keys = signal<NostrAccount[]>([]);
+  
+  // Signal to store client activations
+  clientActivations = signal<ClientActivation[]>([]);
 
   key = computed(() => {
     return this.keys().find((key: any) => key.publicKey === this.publicKey);
@@ -47,6 +59,9 @@ export class NostrService {
 
     // Load saved relays if they exist
     this.loadRelays();
+    
+    // Load client activations
+    this.loadClientActivations();
 
     const keysStorage = localStorage.getItem(STORAGE_KEYS.SIGNER_KEYS);
 
@@ -69,6 +84,72 @@ export class NostrService {
     }
 
     this.connect();
+  }
+
+  // Load client activations from localStorage
+  private loadClientActivations(): void {
+    const activationsString = localStorage.getItem(STORAGE_KEYS.SIGNER_CLIENTS);
+    if (activationsString) {
+      try {
+        const activations = JSON.parse(activationsString);
+        this.clientActivations.set(activations);
+      } catch (e) {
+        console.error('Error parsing stored client activations:', e);
+        this.clientActivations.set([]);
+      }
+    } else {
+      this.clientActivations.set([]);
+    }
+  }
+
+  // Save client activations to localStorage
+  private saveClientActivations(): void {
+    localStorage.setItem(STORAGE_KEYS.SIGNER_CLIENTS, JSON.stringify(this.clientActivations()));
+  }
+
+  // Add a new client activation
+  addClientActivation(clientPubkey: string, pubkey: string, secret: string): void {
+    const newActivation: ClientActivation = {
+      clientPubkey,
+      pubkey,
+      activatedDate: new Date().toISOString(),
+      secret,
+      permissions: 'sign_event' // Default permission
+    };
+    
+    this.clientActivations.update(activations => [...activations, newActivation]);
+    this.saveClientActivations();
+  }
+
+  // Update client activation permissions
+  updateActivationPermissions(clientPubkey: string, pubkey: string, secret: string, permissions: string): void {
+    this.clientActivations.update(activations => 
+      activations.map(activation => 
+        (activation.clientPubkey === clientPubkey && 
+         activation.pubkey === pubkey && 
+         activation.secret === secret) 
+          ? { ...activation, permissions } 
+          : activation
+      )
+    );
+    this.saveClientActivations();
+  }
+
+  // Delete a client activation
+  deleteActivation(clientPubkey: string, pubkey: string, secret: string): void {
+    this.clientActivations.update(activations => 
+      activations.filter(activation => 
+        !(activation.clientPubkey === clientPubkey && 
+          activation.pubkey === pubkey && 
+          activation.secret === secret)
+      )
+    );
+    this.saveClientActivations();
+  }
+
+  // Get activations for a specific client identity
+  getActivationsForIdentity(pubkey: string): ClientActivation[] {
+    return this.clientActivations().filter(activation => activation.pubkey === pubkey);
   }
 
   // Load saved relays from local storage
@@ -180,11 +261,7 @@ export class NostrService {
   // Generate a new Nostr account
   async generateAccount(): Promise<void> {
     try {
-
       const secret = uuidv4();
-
-      // this.keys.update(array => [...array, keyPair]);
-      // localStorage.setItem(STORAGE_KEYS.SIGNER_KEY, JSON.stringify(this.keys()));
 
       let privateKeyClient = generateSecretKey();
       let publicKeyClient = getPublicKey(privateKeyClient);
@@ -197,6 +274,10 @@ export class NostrService {
 
       this.keys.update(array => [...array, keyPairClient]);
       localStorage.setItem(STORAGE_KEYS.SIGNER_KEYS, JSON.stringify(this.keys()));
+
+      // When a new client identity is created, register a placeholder activation
+      // The actual client pubkey will be updated when a real client connects
+      this.addClientActivation('pending', publicKeyClient, secret);
 
       // Navigate to the setup page to display the connection URL
       this.router.navigate(['/setup']);
@@ -219,9 +300,6 @@ export class NostrService {
       // Save as signer key
       this.saveSignerKey(keyPair);
 
-      // this.keys.update(array => [...array, keyPair]);
-      // localStorage.setItem(STORAGE_KEYS.SIGNER_KEY, JSON.stringify(this.keys()));
-
       let privateKeyClient = generateSecretKey();
       let publicKeyClient = getPublicKey(privateKeyClient);
 
@@ -234,6 +312,10 @@ export class NostrService {
       this.keys.update(array => [...array, keyPairClient]);
       localStorage.setItem(STORAGE_KEYS.SIGNER_KEYS, JSON.stringify(this.keys()));
 
+      // When a new client identity is created, register a placeholder activation
+      // The actual client pubkey will be updated when a real client connects
+      this.addClientActivation('pending', publicKeyClient, secret);
+
       // Navigate to the setup page to display the connection URL
       this.router.navigate(['/setup']);
     } catch (error) {
@@ -244,35 +326,19 @@ export class NostrService {
   // Import an existing Nostr private key (nsec)
   async importAccount(nsecKey: string): Promise<boolean> {
     try {
-      // Handle hex or bech32 format
       let privateKeyBytes: Uint8Array;
 
-      // Example nsec: nsec1vl029mgpspedva04g90vltkh6fvh240zqtv9k0t9af8935ke9laqsnlfe5
-      // Example hex: 67dea2ed018072d675f5415ecfaed7d2597555e202d85b3d65ea4e58d2d92ffa
-
-      debugger;
-
       if (nsecKey.startsWith('nsec')) {
-        // This is simplified - in a real app you'd use proper bech32 decoding
-        // You may need to add proper bech32 library to handle this correctly
         try {
           const decoded = nip19.decode(nsecKey);
-          console.log('Decoded nsec:', decoded);
-
-          debugger;
-          // const { data } = parseBunkerInput(nsecKey);
           privateKeyBytes = decoded.data as Uint8Array;
-          console.log('Private key bytes:', bytesToHex(privateKeyBytes));
         } catch (e) {
           console.error('Invalid nsec format:', e);
           return false;
         }
       } else {
-        // Assume it's hex format
         try {
           privateKeyBytes = hexToBytes(nsecKey);
-
-          // Generate a new client account.
           await this.generateAccount();
         } catch (e) {
           console.error('Invalid hex format:', e);
@@ -280,7 +346,6 @@ export class NostrService {
         }
       }
 
-      // Derive public key from private key
       const publicKey = getPublicKey(privateKeyBytes);
 
       const keyPair: NostrAccount = {
@@ -288,17 +353,9 @@ export class NostrService {
         privateKey: bytesToHex(privateKeyBytes)
       };
 
-      // Save as signer key
       this.saveSignerKey(keyPair);
-
-      // Generate a new client account.
       await this.generateAccount();
 
-      // Add to keys collection
-      // this.keys.update(array => [...array, keyPair]);
-      // localStorage.setItem(STORAGE_KEYS.SIGNER_KEYS, JSON.stringify(this.keys()));
-
-      // Navigate to the setup page
       this.router.navigate(['/setup']);
       return true;
     } catch (error) {
@@ -311,8 +368,10 @@ export class NostrService {
   reset(): void {
     this.keys.set([]);
     this.account.set(null);
+    this.clientActivations.set([]);
     localStorage.removeItem(STORAGE_KEYS.SIGNER_KEYS);
     localStorage.removeItem(STORAGE_KEYS.SIGNER_KEY);
+    localStorage.removeItem(STORAGE_KEYS.SIGNER_CLIENTS);
     localStorage.removeItem(STORAGE_KEYS.RELAYS);
     this.router.navigate(['/']);
   }
@@ -321,6 +380,12 @@ export class NostrService {
   deleteKey(publicKey: string): void {
     this.keys.update(keys => keys.filter(key => key.publicKey !== publicKey));
     localStorage.setItem(STORAGE_KEYS.SIGNER_KEYS, JSON.stringify(this.keys()));
+
+    // Also delete all activations for this key
+    this.clientActivations.update(activations => 
+      activations.filter(activation => activation.pubkey !== publicKey)
+    );
+    this.saveClientActivations();
 
     // If we're deleting the signer key, reset it
     if (this.account()?.publicKey === publicKey) {

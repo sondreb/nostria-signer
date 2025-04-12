@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { NostrAccount, NostrService } from '../../services/nostr.service';
+import { ClientActivation, NostrAccount, NostrService } from '../../services/nostr.service';
 import { CommonModule } from '@angular/common';
 import { kinds, nip44, SimplePool } from 'nostr-tools';
 import { BunkerSigner, parseBunkerInput } from 'nostr-tools/nip46';
@@ -19,14 +19,15 @@ export class SetupComponent {
 
   keys = this.nostrService.keys;
   account = this.nostrService.account;
+  clientActivations = this.nostrService.clientActivations;
   showPrivateKeys = signal<Record<string, boolean>>({});
   activeTab = signal<'clients' | 'signer' | 'relays'>('clients');
   relays = signal<string[]>([]);
   newRelay = signal<string>('');
+  editingPermissions = signal<Record<string, boolean>>({});
+  permissionsInput = signal<Record<string, string>>({});
 
-  constructor() {
-    // this.pool = new SimplePool();
-  }
+  constructor() {}
 
   ngOnInit() {
     // Initialize relays signal with values from the service
@@ -116,5 +117,70 @@ export class SetupComponent {
     } catch {
       return false;
     }
+  }
+
+  getActivationsForIdentity(pubkey: string): ClientActivation[] {
+    return this.nostrService.getActivationsForIdentity(pubkey);
+  }
+
+  deleteActivation(activation: ClientActivation) {
+    if (confirm('Are you sure you want to delete this activation?')) {
+      this.nostrService.deleteActivation(
+        activation.clientPubkey, 
+        activation.pubkey, 
+        activation.secret
+      );
+    }
+  }
+
+  startEditingPermissions(activation: ClientActivation) {
+    const activationId = this.getActivationId(activation);
+    this.permissionsInput.update(current => ({
+      ...current,
+      [activationId]: activation.permissions
+    }));
+    
+    this.editingPermissions.update(current => ({
+      ...current,
+      [activationId]: true
+    }));
+  }
+
+  savePermissions(activation: ClientActivation) {
+    const activationId = this.getActivationId(activation);
+    const newPermissions = this.permissionsInput()[activationId] || '';
+    
+    this.nostrService.updateActivationPermissions(
+      activation.clientPubkey,
+      activation.pubkey,
+      activation.secret,
+      newPermissions
+    );
+    
+    this.editingPermissions.update(current => ({
+      ...current,
+      [activationId]: false
+    }));
+  }
+
+  cancelEditPermissions(activation: ClientActivation) {
+    const activationId = this.getActivationId(activation);
+    this.editingPermissions.update(current => ({
+      ...current,
+      [activationId]: false
+    }));
+  }
+
+  isEditingPermissions(activation: ClientActivation): boolean {
+    const activationId = this.getActivationId(activation);
+    return !!this.editingPermissions()[activationId];
+  }
+
+  getActivationId(activation: ClientActivation): string {
+    return `${activation.clientPubkey}:${activation.pubkey}:${activation.secret}`;
+  }
+
+  formatDate(dateString: string): string {
+    return new Date(dateString).toLocaleString();
   }
 }
