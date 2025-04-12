@@ -81,10 +81,13 @@ export class NostrService {
 
   // Generate connection URL for a given account
   getConnectionUrl(account: NostrAccount): string {
+    // Get the active signer account's public key (this is used as the remote signer)
+    const signerPublicKey = this.account()?.publicKey || account.publicKey;
+    
     // Format each relay with "relay=" prefix and join with &
     const relaysParam = this.relays.map(relay => `relay=${relay}`).join('&');
     
-    return `bunker://${account.publicKey}?${relaysParam}&secret=${account.secret}`;
+    return `bunker://${signerPublicKey}?${relaysParam}&secret=${account.secret}`;
   }
 
   // Generate a new Nostr account
