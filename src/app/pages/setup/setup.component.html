@@ -1,0 +1,54 @@
+<div class="container">
+  @if (hasKeys()) {
+    <div class="card">
+      <h1 class="text-center">Your Nostr Signer Identities</h1>
+      
+      @for (key of keys(); track key.publicKey) {
+        <div class="key-card">
+          <div class="mb-3">
+            <h3>Nostr Public Key:</h3>
+            <div class="copy-container">
+              <span class="copy-text">{{ key.publicKey }}</span>
+              <button class="copy-button" (click)="copyToClipboard(key.publicKey)">Copy</button>
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <h3>Connection URL</h3>
+            <p>Copy this URL to your Nostr client that supports Nostr Connect (NIP-46):</p>
+            
+            <div class="copy-container">
+              <span class="copy-text">{{ getConnectionUrl(key) }}</span>
+              <button class="copy-button" (click)="copyConnectionUrl(key)">Copy</button>
+            </div>
+          </div>
+          
+          <div class="text-right">
+            <button class="danger" (click)="deleteKey(key.publicKey)">Delete</button>
+          </div>
+          <hr class="key-divider">
+        </div>
+      }
+      
+      <div class="instructions">
+        <h3>How to connect:</h3>
+        <ol>
+          <li>Copy the Connection URL of your desired key</li>
+          <li>Open your Nostr client that supports NIP-46</li>
+          <li>Look for "Connect with external signer" or similar option</li>
+          <li>Paste the URL and approve the connection</li>
+        </ol>
+      </div>
+      
+      <div class="actions mt-4">
+        <button class="primary" (click)="generateNewKey()">Generate New Key</button>
+        <button class="secondary" (click)="resetAllKeys()">Reset All Keys</button>
+      </div>
+    </div>
+  } @else {
+    <div class="card text-center">
+      <p>No keys available. Generating...</p>
+      <button class="primary" (click)="generateNewKey()">Generate New Key</button>
+    </div>
+  }
+</div>

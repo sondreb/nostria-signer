@@ -1,0 +1,20 @@
+.intro-image {
+  height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-image: radial-gradient(circle, rgba(99, 102, 241, 0.2) 0%, rgba(99, 102, 241, 0.05) 70%);
+  border-radius: 1rem;
+  margin: 2rem 0;
+}
+
+.app-logo {
+  max-width: 200px;
+  height: auto;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+  transition: transform 0.3s ease;
+}
+
+.app-logo:hover {
+  transform: scale(1.05);
+}
