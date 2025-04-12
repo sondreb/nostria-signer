@@ -3,6 +3,8 @@ import { Router } from '@angular/router';
 import { generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 import { v4 as uuidv4 } from 'uuid';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
+import { BunkerSigner, parseBunkerInput } from 'nostr-tools/nip46';
+
 
 export interface NostrAccount {
   publicKey: string;
@@ -15,6 +17,8 @@ export interface NostrAccount {
 })
 export class NostrService {
   private router = inject(Router);
+
+  relays = ['wss://relay.angor.io/'];
 
   // Store the Nostr account information
   account = signal<NostrAccount | null>(null);
@@ -56,8 +60,11 @@ export class NostrService {
     //   url: "https://nostria.brainbox.no"
     // });
     
-    return `bunker://${account.publicKey}?relay=wss://relay.angor.io&secret=${account.secret}}`;
-    // return `bunker://${account.publicKey}?relay=wss://relay.angor.io&secret=${account.secret}&metadata=${encodeURIComponent(metadata)}`;
+    // Format each relay with "relay=" prefix and join with &
+    const relaysParam = this.relays.map(relay => `relay=${relay}`).join('&');
+    
+    return `bunker://${account.publicKey}?${relaysParam}&secret=${account.secret}`;
+    // return `bunker://${account.publicKey}?${relaysParam}&secret=${account.secret}&metadata=${encodeURIComponent(metadata)}`;
   }
 
   // Generate a new Nostr account

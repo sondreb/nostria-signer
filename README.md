@@ -1,6 +1,12 @@
-# Tauri + Angular
+# Nostria
 
-This template should help get you started developing with Tauri and Angular.
+<img src="public/icons/icon-128x128.png" alt="Nostria Logo" width="128" height="128">
+
+Nostria Signer is a Desktop app that allows you to sign and verify messages using your Nostr keys.
+
+## Installation
+
+Desktop: https://github.com/sondreb/nostria-signer/releases
 
 ## Recommended IDE Setup
 
