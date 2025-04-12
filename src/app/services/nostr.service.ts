@@ -40,16 +40,16 @@ export class NostrService {
   // Store the Nostr account information
   account = signal<NostrAccount | null>(null);
 
-  publicKey = '';
+  // publicKey = '';
 
   keys = signal<NostrAccount[]>([]);
   
   // Signal to store client activations
   clientActivations = signal<ClientActivation[]>([]);
 
-  key = computed(() => {
-    return this.keys().find((key: any) => key.publicKey === this.publicKey);
-  });
+  // key = computed(() => {
+  //   return this.keys().find((key: any) => key.publicKey === this.publicKey);
+  // });
 
   pool: SimplePool | undefined;
 
@@ -180,20 +180,24 @@ export class NostrService {
 
     this.pool = new SimplePool();
 
+    console.log('Listening to relay with pub key:', this.account()!.publicKey);
+
     // Only subscribe if we have keys
     if (this.keys().length > 0) {
       this.pool.subscribeMany(this.relays, [
         {
           kinds: [kinds.NostrConnect],
-          ['#p']: ['23cba1afe0a23313007114d36d62cc52bf938483fe459a44868ac06856cf247e'],
+          ['#p']: [this.account()!.publicKey],
         },
       ],
         {
           onevent: (evt) => {
             console.log('Event received', evt);
 
-            const privateKeyHex = this.keys()[0].privateKey;
-            const privateKey = hexToBytes(privateKeyHex);
+            debugger;
+
+            const privateKeyHex = this.account()?.privateKey;
+            const privateKey = hexToBytes(privateKeyHex!);
 
             // The content of evt is a NIP-44 encrypted event, decrypt it:
             const convKey = v2.utils.getConversationKey(privateKey, evt.pubkey);
@@ -201,6 +205,10 @@ export class NostrService {
             const decrypted = v2.decrypt(evt.content, convKey);
             console.log('Decrypted content:', decrypted);
             console.log(JSON.stringify(decrypted, null, 2));
+
+            // {"id":"nv1jit-1","method":"connect","params":["911bd819a054536335761450e6fce916f2bae68b9cd1eeff0d6c2e4994e95034","9be97c6b-29dd-4d92-ae8d-8fa83ee4c72e"]}
+
+            debugger;
           },
 
           onclose: (reasons) => {
@@ -232,7 +240,7 @@ export class NostrService {
       try {
         const signerKey = JSON.parse(signerKeyString);
         this.account.set(signerKey);
-        this.publicKey = signerKey.publicKey;
+        // this.publicKey = signerKey.publicKey;
       } catch (e) {
         console.error('Error parsing stored signer key:', e);
         this.account.set(null);
@@ -244,7 +252,7 @@ export class NostrService {
   private saveSignerKey(account: NostrAccount): void {
     localStorage.setItem(STORAGE_KEYS.SIGNER_KEY, JSON.stringify(account));
     this.account.set(account);
-    this.publicKey = account.publicKey;
+    // this.publicKey = account.publicKey;
   }
 
   // Generate connection URL for a given account
