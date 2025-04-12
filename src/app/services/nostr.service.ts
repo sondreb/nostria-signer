@@ -4,8 +4,8 @@ import { generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 import { v4 as uuidv4 } from 'uuid';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
 import { BunkerSigner, parseBunkerInput } from 'nostr-tools/nip46';
-import { nip19 } from 'nostr-tools';
-
+import { kinds, nip19, SimplePool } from 'nostr-tools';
+import { v2 } from 'nostr-tools/nip44';
 
 export interface NostrAccount {
   publicKey: string;
@@ -32,11 +32,16 @@ export class NostrService {
     return this.keys().find((key: any) => key.publicKey === this.publicKey);
   });
 
+  pool: SimplePool | undefined;
+
   constructor() {
     // Load the signer key
     this.loadSignerKey();
     
-    const keysStorage = localStorage.getItem('nostr-signer-keys');
+    // Load saved relays if they exist
+    this.loadRelays();
+
+    const keysStorage = localStorage.getItem('nostria-signer-keys');
 
     if (keysStorage) {
       try {
@@ -55,6 +60,81 @@ export class NostrService {
     } else {
       this.keys.set([]);
     }
+
+    this.connect();
+  }
+
+  // Load saved relays from local storage
+  private loadRelays(): void {
+    const savedRelays = localStorage.getItem('nostria-relays');
+    if (savedRelays) {
+      try {
+        const relaysArray = JSON.parse(savedRelays);
+        if (Array.isArray(relaysArray) && relaysArray.length > 0) {
+          this.relays = relaysArray;
+        }
+      } catch (e) {
+        console.error('Error parsing stored relays:', e);
+      }
+    }
+  }
+
+  // Save relays to local storage
+  private saveRelays(): void {
+    localStorage.setItem('nostria-relays', JSON.stringify(this.relays));
+  }
+
+  connect() {
+    // Close existing pool if it exists
+    if (this.pool) {
+      this.pool.close(this.relays);
+    }
+    
+    this.pool = new SimplePool();
+
+    // Only subscribe if we have keys
+    if (this.keys().length > 0) {
+      this.pool.subscribeMany(this.relays, [
+        {
+          kinds: [kinds.NostrConnect],
+          ['#p']: ['23cba1afe0a23313007114d36d62cc52bf938483fe459a44868ac06856cf247e'],
+        },
+      ],
+        {
+          onevent: (evt) => {
+            console.log('Event received', evt);
+
+            const privateKeyHex = this.keys()[0].privateKey;
+            const privateKey = hexToBytes(privateKeyHex);
+
+            // The content of evt is a NIP-44 encrypted event, decrypt it:
+            const convKey = v2.utils.getConversationKey(privateKey, evt.pubkey);
+
+            const decrypted = v2.decrypt(evt.content, convKey);
+            console.log('Decrypted content:', decrypted);
+            console.log(JSON.stringify(decrypted, null, 2));
+          },
+
+          onclose: (reasons) => {
+            console.log('Pool closed', reasons);
+          },
+        }
+      );
+    }
+
+    console.log('Connected to relays:', this.relays);
+  }
+
+  // Update relays list and reconnect
+  updateRelays(newRelays: string[]): void {
+    // Ensure we always have at least one relay
+    if (newRelays.length === 0) {
+      newRelays = ['wss://relay.angor.io/'];
+    }
+    
+    this.relays = [...newRelays];
+    this.saveRelays();
+    this.connect();
   }
 
   // Load the signer key from local storage
@@ -83,10 +163,10 @@ export class NostrService {
   getConnectionUrl(account: NostrAccount): string {
     // Get the active signer account's public key (this is used as the remote signer)
     const signerPublicKey = this.account()?.publicKey || account.publicKey;
-    
+
     // Format each relay with "relay=" prefix and join with &
     const relaysParam = this.relays.map(relay => `relay=${relay}`).join('&');
-    
+
     return `bunker://${signerPublicKey}?${relaysParam}&secret=${account.secret}`;
   }
 
@@ -96,18 +176,18 @@ export class NostrService {
       let privateKey = generateSecretKey();
       let publicKey = getPublicKey(privateKey);
       const secret = uuidv4();
-      
-      const keyPair: NostrAccount = { 
-        publicKey, 
-        privateKey: bytesToHex(privateKey), 
+
+      const keyPair: NostrAccount = {
+        publicKey,
+        privateKey: bytesToHex(privateKey),
         secret
       };
-      
+
       // Save as signer key
       this.saveSignerKey(keyPair);
-      
+
       this.keys.update(array => [...array, keyPair]);
-      localStorage.setItem('nostr-signer-keys', JSON.stringify(this.keys()));
+      localStorage.setItem('nostria-signer-keys', JSON.stringify(this.keys()));
 
       // Navigate to the setup page to display the connection URL
       this.router.navigate(['/setup']);
@@ -115,7 +195,7 @@ export class NostrService {
       console.error('Error generating Nostr account:', error);
     }
   }
-  
+
   // Import an existing Nostr private key (nsec)
   async importAccount(nsecKey: string): Promise<boolean> {
     try {
@@ -126,7 +206,7 @@ export class NostrService {
       // Example hex: 67dea2ed018072d675f5415ecfaed7d2597555e202d85b3d65ea4e58d2d92ffa
 
       debugger;
-      
+
       if (nsecKey.startsWith('nsec')) {
         // This is simplified - in a real app you'd use proper bech32 decoding
         // You may need to add proper bech32 library to handle this correctly
@@ -151,24 +231,24 @@ export class NostrService {
           return false;
         }
       }
-      
+
       // Derive public key from private key
       const publicKey = getPublicKey(privateKeyBytes);
       const secret = uuidv4();
-      
+
       const keyPair: NostrAccount = {
         publicKey,
         privateKey: bytesToHex(privateKeyBytes),
         secret
       };
-      
+
       // Save as signer key
       this.saveSignerKey(keyPair);
-      
+
       // Add to keys collection
       this.keys.update(array => [...array, keyPair]);
-      localStorage.setItem('nostr-signer-keys', JSON.stringify(this.keys()));
-      
+      localStorage.setItem('nostria-signer-keys', JSON.stringify(this.keys()));
+
       // Navigate to the setup page
       this.router.navigate(['/setup']);
       return true;
@@ -182,16 +262,17 @@ export class NostrService {
   reset(): void {
     this.keys.set([]);
     this.account.set(null);
-    localStorage.removeItem('nostr-signer-keys');
+    localStorage.removeItem('nostria-signer-keys');
     localStorage.removeItem('nostria-signer-key');
+    localStorage.removeItem('nostria-relays');
     this.router.navigate(['/']);
   }
-  
+
   // Delete a specific key by publicKey
   deleteKey(publicKey: string): void {
     this.keys.update(keys => keys.filter(key => key.publicKey !== publicKey));
-    localStorage.setItem('nostr-signer-keys', JSON.stringify(this.keys()));
-    
+    localStorage.setItem('nostria-signer-keys', JSON.stringify(this.keys()));
+
     // If we're deleting the signer key, reset it
     if (this.account()?.publicKey === publicKey) {
       this.account.set(null);

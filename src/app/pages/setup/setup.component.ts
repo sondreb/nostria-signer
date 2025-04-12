@@ -5,12 +5,12 @@ import { kinds, nip44, SimplePool } from 'nostr-tools';
 import { BunkerSigner, parseBunkerInput } from 'nostr-tools/nip46';
 import { v2 } from 'nostr-tools/nip44';
 import { hexToBytes } from '@noble/hashes/utils';
-
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-setup',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './setup.component.html',
   styleUrls: ['./setup.component.css']
 })
@@ -20,49 +20,20 @@ export class SetupComponent {
   keys = this.nostrService.keys;
   account = this.nostrService.account;
   showPrivateKeys = signal<Record<string, boolean>>({});
-  activeTab = signal<'clients' | 'signer'>('clients');
-
-  pool: SimplePool;
+  activeTab = signal<'clients' | 'signer' | 'relays'>('clients');
+  relays = signal<string[]>([]);
+  newRelay = signal<string>('');
 
   constructor() {
-    this.pool = new SimplePool();
+    // this.pool = new SimplePool();
   }
 
   ngOnInit() {
-    // this.pool.subscribe('')
-    this.pool.subscribeMany(this.nostrService.relays, [
-      {
-        kinds: [kinds.NostrConnect],
-        ['#p']: ['23cba1afe0a23313007114d36d62cc52bf938483fe459a44868ac06856cf247e'],
-      },
-    ],
-      {
-        onevent: (evt) => {
-          console.log('Event received', evt);
-
-          // this.keys()[0].privateKey
-
-          const privateKeyHex = this.keys()[0].privateKey;
-          const privateKey = hexToBytes(privateKeyHex);
-
-          // The content of evt is a NIP-44 encrypted event, decrypt it:
-          const convKey = v2.utils.getConversationKey(privateKey, evt.pubkey);
-
-          const decrypted = v2.decrypt(evt.content, convKey);
-          console.log('Decrypted content:', decrypted);
-          console.log(JSON.stringify(decrypted, null, 2));
-        },
-
-        onclose: (reasons) => {
-          console.log('Pool closed', reasons);
-        },
-      }
-    );
-
-    console.log('Connected to relays:', this.nostrService.relays);
+    // Initialize relays signal with values from the service
+    this.relays.set([...this.nostrService.relays]);
   }
 
-  setActiveTab(tab: 'clients' | 'signer') {
+  setActiveTab(tab: 'clients' | 'signer' | 'relays') {
     this.activeTab.set(tab);
   }
 
@@ -115,5 +86,35 @@ export class SetupComponent {
 
   isPrivateKeyVisible(publicKey: string): boolean {
     return !!this.showPrivateKeys()[publicKey];
+  }
+
+  addRelay() {
+    const relay = this.newRelay().trim();
+    if (relay && !this.relays().includes(relay)) {
+      // Add new relay
+      this.relays.update(current => [...current, relay]);
+      // Update service
+      this.updateRelays();
+      // Reset input
+      this.newRelay.set('');
+    }
+  }
+
+  removeRelay(relay: string) {
+    this.relays.update(current => current.filter(r => r !== relay));
+    this.updateRelays();
+  }
+
+  updateRelays() {
+    this.nostrService.updateRelays(this.relays());
+  }
+
+  isValidUrl(url: string): boolean {
+    try {
+      // Simple validation - checks if it's a valid WebSocket URL
+      return url.trim().startsWith('wss://') || url.trim().startsWith('ws://');
+    } catch {
+      return false;
+    }
   }
 }

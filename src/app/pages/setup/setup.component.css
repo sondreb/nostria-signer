@@ -142,3 +142,60 @@ button.secondary {
   margin: 1rem 0;
   border-left: 4px solid #007bff;
 }
+
+/* Relay management styles */
+.relay-list {
+  margin-bottom: 20px;
+}
+
+.relay-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid #ddd;
+  margin-bottom: 8px;
+  border-radius: 4px;
+}
+
+.add-relay-form {
+  display: flex;
+  margin-bottom: 20px;
+}
+
+.relay-input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px 0 0 4px;
+}
+
+.add-button {
+  padding: 8px 15px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 0 4px 4px 0;
+  cursor: pointer;
+}
+
+.add-button:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.remove-button {
+  padding: 4px 8px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.relay-info {
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  margin-top: 10px;
+}

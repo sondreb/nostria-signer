@@ -10,6 +10,9 @@
       <button class="tab" [class.active]="activeTab() === 'signer'" (click)="setActiveTab('signer')">
         Signer Identity
       </button>
+      <button class="tab" [class.active]="activeTab() === 'relays'" (click)="setActiveTab('relays')">
+        Relays
+      </button>
     </div>
 
     @if (activeTab() === 'clients') {
@@ -93,6 +96,46 @@
       <p>No signer identity available. Generate a client identity first.</p>
     </div>
     }
+    }
+
+    @if (activeTab() === 'relays') {
+    <div class="key-card">
+      <h3>Manage Relays</h3>
+      <p>Add or remove relays to connect your signer to the Nostr network</p>
+      
+      <div class="relay-list">
+        @for (relay of relays(); track relay) {
+        <div class="relay-item">
+          <span>{{ relay }}</span>
+          <button class="remove-button" (click)="removeRelay(relay)">Remove</button>
+        </div>
+        }
+        
+        @if (relays().length === 0) {
+        <p class="text-center">No relays configured. Add at least one relay below.</p>
+        }
+      </div>
+      
+      <div class="add-relay-form">
+        <input 
+          type="text" 
+          placeholder="wss://relay.example.com" 
+          [ngModel]="newRelay()" 
+          (ngModelChange)="newRelay.set($event)"
+          class="relay-input" />
+        <button 
+          class="add-button" 
+          [disabled]="!isValidUrl(newRelay())" 
+          (click)="addRelay()">Add Relay</button>
+      </div>
+      
+      <div class="relay-info">
+        <p>
+          <strong>Note:</strong> Relays should start with "wss://" for secure WebSocket connections.
+          Changes to relays will affect all your connections.
+        </p>
+      </div>
+    </div>
     }
 
     @if (activeTab() === 'clients') {
