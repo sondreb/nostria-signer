@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { generateSecretKey, getPublicKey } from 'nostr-tools/pure';
+import { Event, generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 import { v4 as uuidv4 } from 'uuid';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
 import { BunkerSigner, parseBunkerInput } from 'nostr-tools/nip46';
@@ -248,44 +248,8 @@ export class NostrService {
             debugger;
             console.log('Event received', evt);
 
-            const privateKeyHex = this.account()?.privateKey;
-            const privateKey = hexToBytes(privateKeyHex!);
-
-            try {
-              // The content of evt is a NIP-44 encrypted event, decrypt it:
-              const convKey = v2.utils.getConversationKey(privateKey, evt.pubkey);
-              const decrypted = v2.decrypt(evt.content, convKey);
-              console.log('Decrypted content:', decrypted);
-              
-              // Parse the decrypted content
-              const requestData = JSON.parse(decrypted);
-              console.log(JSON.stringify(requestData, null, 2));
-              
-              // Check if this is a connect method
-              if (requestData.method === 'connect' && requestData.params?.length === 2) {
-                const [signerPubkey, secret] = requestData.params;
-                
-                // Find activation with matching secret
-                const activationIndex = this.clientActivations().findIndex(
-                  activation => activation.secret === secret
-                );
-                
-                if (activationIndex >= 0) {
-                  // Update the activation with client pubkey and ID
-                  this.updateClientActivationOnConnect(
-                    activationIndex,
-                    evt.pubkey,
-                    requestData.id
-                  );
-                  
-                  console.log('Client connection activated successfully');
-                } else {
-                  console.warn('No matching activation found for secret:', secret);
-                }
-              }
-            } catch (error) {
-              console.error('Error processing event:', error);
-            }
+            this.processEvent(evt);
+            
           },
 
           onclose: (reasons) => {
@@ -296,6 +260,47 @@ export class NostrService {
     }
 
     console.log('Connected to relays:', this.relays);
+  }
+
+  processEvent(evt: Event) {
+    const privateKeyHex = this.account()?.privateKey;
+    const privateKey = hexToBytes(privateKeyHex!);
+
+    try {
+      // The content of evt is a NIP-44 encrypted event, decrypt it:
+      const convKey = v2.utils.getConversationKey(privateKey, evt.pubkey);
+      const decrypted = v2.decrypt(evt.content, convKey);
+      console.log('Decrypted content:', decrypted);
+      
+      // Parse the decrypted content
+      const requestData = JSON.parse(decrypted);
+      console.log(JSON.stringify(requestData, null, 2));
+      
+      // Check if this is a connect method
+      if (requestData.method === 'connect' && requestData.params?.length === 2) {
+        const [signerPubkey, secret] = requestData.params;
+        
+        // Find activation with matching secret
+        const activationIndex = this.clientActivations().findIndex(
+          activation => activation.secret === secret
+        );
+        
+        if (activationIndex >= 0) {
+          // Update the activation with client pubkey and ID
+          this.updateClientActivationOnConnect(
+            activationIndex,
+            evt.pubkey,
+            requestData.id
+          );
+          
+          console.log('Client connection activated successfully');
+        } else {
+          console.warn('No matching activation found for secret:', secret);
+        }
+      }
+    } catch (error) {
+      console.error('Error processing event:', error);
+    }
   }
 
   // Update relays list and reconnect
