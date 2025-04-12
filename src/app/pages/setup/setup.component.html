@@ -41,16 +41,6 @@
         </div>
       </div>
 
-      <div class="mb-3">
-        <h3>Connection URL</h3>
-        <p>Copy this URL to your Nostr client that supports Nostr Connect (NIP-46):</p>
-
-        <div class="copy-container">
-          <span class="copy-text">{{ getConnectionUrl(key) }}</span>
-          <button class="copy-button" (click)="copyConnectionUrl(key)">Copy</button>
-        </div>
-      </div>
-
       <!-- Activations Section -->
       <div class="mb-3">
         <h3>Activations</h3>
@@ -63,6 +53,19 @@
                 <span class="mono-text">{{ activation.clientPubkey === 'pending' ? 'Not yet connected' : activation.clientPubkey }}</span>
               </div>
               <div><strong>Activated:</strong> {{ formatDate(activation.activatedDate) }}</div>
+              
+              <!-- Show Connection URL only for pending activations -->
+              @if (isPendingActivation(activation)) {
+              <div class="mb-3">
+                <strong>Connection URL:</strong>
+                <div class="copy-container">
+                  <span class="copy-text">{{ getConnectionUrl(activation) }}</span>
+                  <button class="copy-button" (click)="copyToClipboard(getConnectionUrl(activation))">Copy</button>
+                </div>
+                <p class="connection-hint">Share this URL with your Nostr client to connect</p>
+              </div>
+              }
+              
               <div class="permissions-container">
                 <strong>Permissions:</strong>
 
@@ -182,9 +185,9 @@
     <div class="instructions">
       <h3>How to connect:</h3>
       <ol>
-        <li>Copy the Connection URL of your desired key</li>
-        <li>Open your Nostr client that supports NIP-46</li>
-        <li>Look for "Connect with external signer" or similar option</li>
+        <li>Look for the "Connection URL" in any pending activation</li>
+        <li>Copy this URL to your Nostr client that supports NIP-46</li>
+        <li>Look for "Connect with external signer" or similar option in your client</li>
         <li>Paste the URL and approve the connection</li>
       </ol>
     </div>

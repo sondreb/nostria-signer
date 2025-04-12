@@ -83,8 +83,12 @@ export class SetupComponent {
     return this.keys().length > 0;
   }
 
-  getConnectionUrl(account: NostrAccount): string {
-    return this.nostrService.getConnectionUrl(account);
+  getConnectionUrl(activation: ClientActivation): string {
+    return this.nostrService.getConnectionUrl(activation);
+  }
+
+  isPendingActivation(activation: ClientActivation): boolean {
+    return activation.clientPubkey === 'pending';
   }
 
   copyToClipboard(text: string) {
@@ -97,8 +101,9 @@ export class SetupComponent {
       });
   }
 
+  // Keep this method as a fallback for any remaining code that might use it
   copyConnectionUrl(account: NostrAccount) {
-    const connectionUrl = this.nostrService.getConnectionUrl(account);
+    const connectionUrl = this.nostrService.getConnectionUrlForAccount(account);
     this.copyToClipboard(connectionUrl);
   }
 

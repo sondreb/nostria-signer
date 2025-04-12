@@ -411,3 +411,10 @@ button.delete-button:hover {
   background-color: #e8f5e9;
   border-radius: 4px;
 }
+
+.connection-hint {
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin-top: 0.5rem;
+  font-style: italic;
+}

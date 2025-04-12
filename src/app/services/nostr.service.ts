@@ -287,13 +287,26 @@ export class NostrService {
     this.account.set(account);
   }
 
-  // Generate connection URL for a given account
-  getConnectionUrl(account: NostrAccount): string {
+  // Generate connection URL for a given activation
+  getConnectionUrl(clientActivation: ClientActivation): string {
     // Get the active signer account's public key (this is used as the remote signer)
-    const signerPublicKey = this.account()?.publicKey || account.publicKey;
+    const signerPublicKey = this.account()?.publicKey;
+
+    if (!signerPublicKey || !clientActivation.secret) {
+      return '';
+    }
 
     // Format each relay with "relay=" prefix and join with &
     const relaysParam = this.relays.map(relay => `relay=${relay}`).join('&');
+
+    return `bunker://${signerPublicKey}?${relaysParam}&secret=${clientActivation.secret}`;
+  }
+
+  // Legacy method for backward compatibility
+  getConnectionUrlForAccount(account: NostrAccount): string {
+    // Format each relay with "relay=" prefix and join with &
+    const relaysParam = this.relays.map(relay => `relay=${relay}`).join('&');
+    const signerPublicKey = this.account()?.publicKey || account.publicKey;
 
     return `bunker://${signerPublicKey}?${relaysParam}&secret=${account.secret}`;
   }
