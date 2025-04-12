@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { NostrAccount, NostrService } from '../../services/nostr.service';
 import { CommonModule } from '@angular/common';
 import { kinds, nip44, SimplePool } from 'nostr-tools';
@@ -18,12 +18,12 @@ export class SetupComponent {
   private nostrService = inject(NostrService);
 
   keys = this.nostrService.keys;
+  showPrivateKeys = signal<Record<string, boolean>>({});
 
   pool: SimplePool;
 
   constructor() {
     this.pool = new SimplePool();
-
   }
 
   ngOnInit() {
@@ -97,5 +97,17 @@ export class SetupComponent {
 
   generateNewKey() {
     this.nostrService.generateAccount();
+  }
+
+  togglePrivateKeyVisibility(publicKey: string): void {
+    this.showPrivateKeys.update(keys => {
+      const currentKeys = { ...keys };
+      currentKeys[publicKey] = !currentKeys[publicKey];
+      return currentKeys;
+    });
+  }
+
+  isPrivateKeyVisible(publicKey: string): boolean {
+    return !!this.showPrivateKeys()[publicKey];
   }
 }

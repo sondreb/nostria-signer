@@ -52,6 +52,27 @@
   white-space: nowrap;
 }
 
+.masked-key {
+  font-family: monospace;
+  letter-spacing: 2px;
+}
+
+.reveal-button {
+  margin-left: 0.5rem;
+  white-space: nowrap;
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 0.375rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.reveal-button:hover {
+  background-color: #5a6268;
+}
+
 .actions {
   display: flex;
   justify-content: space-between;

@@ -12,6 +12,21 @@
               <button class="copy-button" (click)="copyToClipboard(key.publicKey)">Copy</button>
             </div>
           </div>
+
+          <div class="mb-3">
+            <h3>Nostr Private Key:</h3>
+            <div class="copy-container">
+              @if (isPrivateKeyVisible(key.publicKey)) {
+                <span class="copy-text">{{ key.privateKey }}</span>
+              } @else {
+                <span class="copy-text masked-key">••••••••••••••••••••••••••••••••••••••••••••••••••••••••</span>
+              }
+              <button class="reveal-button" (click)="togglePrivateKeyVisibility(key.publicKey)">
+                {{ isPrivateKeyVisible(key.publicKey) ? 'Hide' : 'Reveal' }}
+              </button>
+              <button class="copy-button" (click)="copyToClipboard(key.privateKey)">Copy</button>
+            </div>
+          </div>
           
           <div class="mb-3">
             <h3>Connection URL</h3>
