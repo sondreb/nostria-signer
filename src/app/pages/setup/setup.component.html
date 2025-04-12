@@ -99,6 +99,13 @@
         } @else {
         <p class="text-center">No activations for this identity.</p>
         }
+        
+        <!-- New activation button -->
+        <div class="text-center mt-3">
+          <button class="generate-activation-button" (click)="generateNewActivation(key.publicKey)">
+            Generate New Activation
+          </button>
+        </div>
       </div>
 
       <div class="text-right">

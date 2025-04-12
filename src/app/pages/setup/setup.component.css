@@ -418,3 +418,22 @@ button.delete-button:hover {
   margin-top: 0.5rem;
   font-style: italic;
 }
+
+.generate-activation-button {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s ease;
+}
+
+.generate-activation-button:hover {
+  background-color: #218838;
+}
+
+.mt-3 {
+  margin-top: 1rem;
+}

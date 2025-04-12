@@ -116,6 +116,12 @@ export class NostrService {
     this.saveClientActivations();
   }
 
+  // Generate a new activation for an existing key
+  generateNewActivation(publicKey: string): void {
+    const secret = uuidv4();
+    this.addClientActivation('pending', publicKey, secret);
+  }
+
   // Update client activation when connection is established
   updateClientActivationOnConnect(activationIndex: number, clientPubkey: string, clientId: string): void {
     this.clientActivations.update(activations => {

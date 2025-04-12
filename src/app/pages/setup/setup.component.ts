@@ -91,6 +91,10 @@ export class SetupComponent {
     return activation.clientPubkey === 'pending';
   }
 
+  generateNewActivation(publicKey: string): void {
+    this.nostrService.generateNewActivation(publicKey);
+  }
+
   copyToClipboard(text: string) {
     navigator.clipboard.writeText(text)
       .then(() => {
