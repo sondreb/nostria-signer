@@ -133,17 +133,25 @@ export class SetupComponent {
     }
   }
 
+  updatePermissionsInput(activation: ClientActivation, value: string): void {
+    const activationId = this.getActivationId(activation);
+    const currentValues = { ...this.permissionsInput() };
+    currentValues[activationId] = value;
+    this.permissionsInput.set(currentValues);
+  }
+
   startEditingPermissions(activation: ClientActivation) {
     const activationId = this.getActivationId(activation);
-    this.permissionsInput.update(current => ({
-      ...current,
-      [activationId]: activation.permissions
-    }));
     
-    this.editingPermissions.update(current => ({
-      ...current,
-      [activationId]: true
-    }));
+    // Update permissions input first
+    const currentPermissions = { ...this.permissionsInput() };
+    currentPermissions[activationId] = activation.permissions;
+    this.permissionsInput.set(currentPermissions);
+    
+    // Then update editing state
+    const currentEditing = { ...this.editingPermissions() };
+    currentEditing[activationId] = true;
+    this.editingPermissions.set(currentEditing);
   }
 
   savePermissions(activation: ClientActivation) {
@@ -157,18 +165,19 @@ export class SetupComponent {
       newPermissions
     );
     
-    this.editingPermissions.update(current => ({
-      ...current,
-      [activationId]: false
-    }));
+    // Update editing state
+    const currentEditing = { ...this.editingPermissions() };
+    currentEditing[activationId] = false;
+    this.editingPermissions.set(currentEditing);
   }
 
   cancelEditPermissions(activation: ClientActivation) {
     const activationId = this.getActivationId(activation);
-    this.editingPermissions.update(current => ({
-      ...current,
-      [activationId]: false
-    }));
+    
+    // Update editing state
+    const currentEditing = { ...this.editingPermissions() };
+    currentEditing[activationId] = false;
+    this.editingPermissions.set(currentEditing);
   }
 
   isEditingPermissions(activation: ClientActivation): boolean {
