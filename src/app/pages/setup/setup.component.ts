@@ -26,12 +26,53 @@ export class SetupComponent {
   newRelay = signal<string>('');
   editingPermissions = signal<Record<string, boolean>>({});
   permissionsInput = signal<Record<string, string>>({});
+  showImportModal = signal<boolean>(false);
+  importKeyValue = signal<string>('');
+  importError = signal<string | null>(null);
+  importSuccess = signal<boolean>(false);
 
   constructor() {}
 
   ngOnInit() {
     // Initialize relays signal with values from the service
     this.relays.set([...this.nostrService.relays]);
+  }
+
+  toggleImportModal(): void {
+    this.showImportModal.update(current => !current);
+    // Reset form when toggling
+    if (this.showImportModal()) {
+      this.importKeyValue.set('');
+      this.importError.set(null);
+      this.importSuccess.set(false);
+    }
+  }
+
+  async importKey(): Promise<void> {
+    this.importError.set(null);
+    this.importSuccess.set(false);
+    
+    const keyValue = this.importKeyValue().trim();
+    if (!keyValue) {
+      this.importError.set('Please enter a private key in nsec or hex format.');
+      return;
+    }
+
+    try {
+      const success = await this.nostrService.importAccount(keyValue);
+      if (success) {
+        this.importSuccess.set(true);
+        // Close the modal after a short delay
+        setTimeout(() => {
+          this.showImportModal.set(false);
+        }, 1500);
+      } else {
+        this.importError.set('Failed to import the key. Please check the format and try again.');
+      }
+    } catch (error) {
+      console.error('Error importing key:', error);
+      this.importError.set('An unexpected error occurred. Please try again.');
+    }
   }
 
   setActiveTab(tab: 'clients' | 'signer' | 'relays') {

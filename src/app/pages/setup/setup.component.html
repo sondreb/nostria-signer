@@ -192,6 +192,7 @@
 
     <div class="actions mt-4">
       <button class="primary" (click)="generateNewKey()">Generate New Client Identity</button>
+      <button class="secondary" (click)="toggleImportModal()">Import Client Identity</button>
       <button class="secondary" (click)="resetAllKeys()">Reset All Keys</button>
     </div>
   </div>
@@ -199,6 +200,40 @@
   <div class="card text-center">
     <p>No keys available. Generating...</p>
     <button class="primary" (click)="generateNewKey()">Generate New Client Identity</button>
+    <button class="secondary mt-2" (click)="toggleImportModal()">Import Client Identity</button>
+  </div>
+  }
+
+  <!-- Import Modal -->
+  @if (showImportModal()) {
+  <div class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Import Client Identity</h2>
+        <button class="close-button" (click)="toggleImportModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <p>Enter your private key in nsec or hex format:</p>
+        <input 
+          type="text" 
+          [ngModel]="importKeyValue()" 
+          (ngModelChange)="importKeyValue.set($event)" 
+          class="import-input" 
+          placeholder="nsec1... or hex private key" />
+        
+        @if (importError()) {
+        <div class="error-message">{{ importError() }}</div>
+        }
+        
+        @if (importSuccess()) {
+        <div class="success-message">Successfully imported! Redirecting...</div>
+        }
+      </div>
+      <div class="modal-footer">
+        <button class="secondary" (click)="toggleImportModal()">Cancel</button>
+        <button class="primary" (click)="importKey()" [disabled]="!importKeyValue()">Import</button>
+      </div>
+    </div>
   </div>
   }
 </div>
