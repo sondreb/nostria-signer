@@ -4,6 +4,7 @@ import { generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 import { v4 as uuidv4 } from 'uuid';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
 import { BunkerSigner, parseBunkerInput } from 'nostr-tools/nip46';
+import { nip19 } from 'nostr-tools';
 
 
 export interface NostrAccount {
@@ -32,6 +33,9 @@ export class NostrService {
   });
 
   constructor() {
+    // Load the signer key
+    this.loadSignerKey();
+    
     const keysStorage = localStorage.getItem('nostr-signer-keys');
 
     if (keysStorage) {
@@ -53,18 +57,34 @@ export class NostrService {
     }
   }
 
+  // Load the signer key from local storage
+  private loadSignerKey(): void {
+    const signerKeyString = localStorage.getItem('nostria-signer-key');
+    if (signerKeyString) {
+      try {
+        const signerKey = JSON.parse(signerKeyString);
+        this.account.set(signerKey);
+        this.publicKey = signerKey.publicKey;
+      } catch (e) {
+        console.error('Error parsing stored signer key:', e);
+        this.account.set(null);
+      }
+    }
+  }
+
+  // Save the signer key to local storage
+  private saveSignerKey(account: NostrAccount): void {
+    localStorage.setItem('nostria-signer-key', JSON.stringify(account));
+    this.account.set(account);
+    this.publicKey = account.publicKey;
+  }
+
   // Generate connection URL for a given account
   getConnectionUrl(account: NostrAccount): string {
-    // const metadata = JSON.stringify({
-    //   name: "Nostria Signer",
-    //   url: "https://nostria.brainbox.no"
-    // });
-    
     // Format each relay with "relay=" prefix and join with &
     const relaysParam = this.relays.map(relay => `relay=${relay}`).join('&');
     
     return `bunker://${account.publicKey}?${relaysParam}&secret=${account.secret}`;
-    // return `bunker://${account.publicKey}?${relaysParam}&secret=${account.secret}&metadata=${encodeURIComponent(metadata)}`;
   }
 
   // Generate a new Nostr account
@@ -80,9 +100,11 @@ export class NostrService {
         secret
       };
       
+      // Save as signer key
+      this.saveSignerKey(keyPair);
+      
       this.keys.update(array => [...array, keyPair]);
       localStorage.setItem('nostr-signer-keys', JSON.stringify(this.keys()));
-      this.publicKey = publicKey;
 
       // Navigate to the setup page to display the connection URL
       this.router.navigate(['/setup']);
@@ -90,11 +112,75 @@ export class NostrService {
       console.error('Error generating Nostr account:', error);
     }
   }
+  
+  // Import an existing Nostr private key (nsec)
+  async importAccount(nsecKey: string): Promise<boolean> {
+    try {
+      // Handle hex or bech32 format
+      let privateKeyBytes: Uint8Array;
+
+      // Example nsec: nsec1vl029mgpspedva04g90vltkh6fvh240zqtv9k0t9af8935ke9laqsnlfe5
+      // Example hex: 67dea2ed018072d675f5415ecfaed7d2597555e202d85b3d65ea4e58d2d92ffa
+
+      debugger;
+      
+      if (nsecKey.startsWith('nsec')) {
+        // This is simplified - in a real app you'd use proper bech32 decoding
+        // You may need to add proper bech32 library to handle this correctly
+        try {
+          const decoded = nip19.decode(nsecKey);
+          console.log('Decoded nsec:', decoded);
+
+          debugger;
+          // const { data } = parseBunkerInput(nsecKey);
+          privateKeyBytes = decoded.data as Uint8Array;
+          console.log('Private key bytes:', bytesToHex(privateKeyBytes));
+        } catch (e) {
+          console.error('Invalid nsec format:', e);
+          return false;
+        }
+      } else {
+        // Assume it's hex format
+        try {
+          privateKeyBytes = hexToBytes(nsecKey);
+        } catch (e) {
+          console.error('Invalid hex format:', e);
+          return false;
+        }
+      }
+      
+      // Derive public key from private key
+      const publicKey = getPublicKey(privateKeyBytes);
+      const secret = uuidv4();
+      
+      const keyPair: NostrAccount = {
+        publicKey,
+        privateKey: bytesToHex(privateKeyBytes),
+        secret
+      };
+      
+      // Save as signer key
+      this.saveSignerKey(keyPair);
+      
+      // Add to keys collection
+      this.keys.update(array => [...array, keyPair]);
+      localStorage.setItem('nostr-signer-keys', JSON.stringify(this.keys()));
+      
+      // Navigate to the setup page
+      this.router.navigate(['/setup']);
+      return true;
+    } catch (error) {
+      console.error('Error importing Nostr account:', error);
+      return false;
+    }
+  }
 
   // Reset all accounts
   reset(): void {
     this.keys.set([]);
+    this.account.set(null);
     localStorage.removeItem('nostr-signer-keys');
+    localStorage.removeItem('nostria-signer-key');
     this.router.navigate(['/']);
   }
   
@@ -102,5 +188,11 @@ export class NostrService {
   deleteKey(publicKey: string): void {
     this.keys.update(keys => keys.filter(key => key.publicKey !== publicKey));
     localStorage.setItem('nostr-signer-keys', JSON.stringify(this.keys()));
+    
+    // If we're deleting the signer key, reset it
+    if (this.account()?.publicKey === publicKey) {
+      this.account.set(null);
+      localStorage.removeItem('nostria-signer-key');
+    }
   }
 }
