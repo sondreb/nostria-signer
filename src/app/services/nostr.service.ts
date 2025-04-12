@@ -7,6 +7,13 @@ import { BunkerSigner, parseBunkerInput } from 'nostr-tools/nip46';
 import { kinds, nip19, SimplePool } from 'nostr-tools';
 import { v2 } from 'nostr-tools/nip44';
 
+// Constants for localStorage keys
+export const STORAGE_KEYS = {
+  SIGNER_KEYS: 'nostria-signer-keys',
+  SIGNER_KEY: 'nostria-signer-key',
+  RELAYS: 'nostria-relays'
+};
+
 export interface NostrAccount {
   publicKey: string;
   privateKey: string;
@@ -41,7 +48,7 @@ export class NostrService {
     // Load saved relays if they exist
     this.loadRelays();
 
-    const keysStorage = localStorage.getItem('nostria-signer-keys');
+    const keysStorage = localStorage.getItem(STORAGE_KEYS.SIGNER_KEYS);
 
     if (keysStorage) {
       try {
@@ -66,7 +73,7 @@ export class NostrService {
 
   // Load saved relays from local storage
   private loadRelays(): void {
-    const savedRelays = localStorage.getItem('nostria-relays');
+    const savedRelays = localStorage.getItem(STORAGE_KEYS.RELAYS);
     if (savedRelays) {
       try {
         const relaysArray = JSON.parse(savedRelays);
@@ -81,7 +88,7 @@ export class NostrService {
 
   // Save relays to local storage
   private saveRelays(): void {
-    localStorage.setItem('nostria-relays', JSON.stringify(this.relays));
+    localStorage.setItem(STORAGE_KEYS.RELAYS, JSON.stringify(this.relays));
   }
 
   connect() {
@@ -139,7 +146,7 @@ export class NostrService {
 
   // Load the signer key from local storage
   private loadSignerKey(): void {
-    const signerKeyString = localStorage.getItem('nostria-signer-key');
+    const signerKeyString = localStorage.getItem(STORAGE_KEYS.SIGNER_KEY);
     if (signerKeyString) {
       try {
         const signerKey = JSON.parse(signerKeyString);
@@ -154,7 +161,7 @@ export class NostrService {
 
   // Save the signer key to local storage
   private saveSignerKey(account: NostrAccount): void {
-    localStorage.setItem('nostria-signer-key', JSON.stringify(account));
+    localStorage.setItem(STORAGE_KEYS.SIGNER_KEY, JSON.stringify(account));
     this.account.set(account);
     this.publicKey = account.publicKey;
   }
@@ -186,8 +193,20 @@ export class NostrService {
       // Save as signer key
       this.saveSignerKey(keyPair);
 
-      this.keys.update(array => [...array, keyPair]);
-      localStorage.setItem('nostria-signer-keys', JSON.stringify(this.keys()));
+      // this.keys.update(array => [...array, keyPair]);
+      localStorage.setItem(STORAGE_KEYS.SIGNER_KEY, JSON.stringify(this.keys()));
+
+      let privateKeyClient = generateSecretKey();
+      let publicKeyClient = getPublicKey(privateKeyClient);
+
+      const keyPairClient: NostrAccount = {
+        publicKey: publicKeyClient,
+        privateKey: bytesToHex(privateKeyClient),
+        secret
+      };
+
+      this.keys.update(array => [...array, keyPairClient]);
+      localStorage.setItem(STORAGE_KEYS.SIGNER_KEYS, JSON.stringify(this.keys()));
 
       // Navigate to the setup page to display the connection URL
       this.router.navigate(['/setup']);
@@ -247,7 +266,7 @@ export class NostrService {
 
       // Add to keys collection
       this.keys.update(array => [...array, keyPair]);
-      localStorage.setItem('nostria-signer-keys', JSON.stringify(this.keys()));
+      localStorage.setItem(STORAGE_KEYS.SIGNER_KEYS, JSON.stringify(this.keys()));
 
       // Navigate to the setup page
       this.router.navigate(['/setup']);
@@ -262,21 +281,21 @@ export class NostrService {
   reset(): void {
     this.keys.set([]);
     this.account.set(null);
-    localStorage.removeItem('nostria-signer-keys');
-    localStorage.removeItem('nostria-signer-key');
-    localStorage.removeItem('nostria-relays');
+    localStorage.removeItem(STORAGE_KEYS.SIGNER_KEYS);
+    localStorage.removeItem(STORAGE_KEYS.SIGNER_KEY);
+    localStorage.removeItem(STORAGE_KEYS.RELAYS);
     this.router.navigate(['/']);
   }
 
   // Delete a specific key by publicKey
   deleteKey(publicKey: string): void {
     this.keys.update(keys => keys.filter(key => key.publicKey !== publicKey));
-    localStorage.setItem('nostria-signer-keys', JSON.stringify(this.keys()));
+    localStorage.setItem(STORAGE_KEYS.SIGNER_KEYS, JSON.stringify(this.keys()));
 
     // If we're deleting the signer key, reset it
     if (this.account()?.publicKey === publicKey) {
       this.account.set(null);
-      localStorage.removeItem('nostria-signer-key');
+      localStorage.removeItem(STORAGE_KEYS.SIGNER_KEY);
     }
   }
 }
