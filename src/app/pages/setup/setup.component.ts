@@ -169,7 +169,7 @@ export class SetupComponent {
       this.nostrService.deleteActivation(
         activation.clientPubkey, 
         activation.pubkey, 
-        activation.secret
+        activation.secret!
       );
     }
   }
@@ -202,7 +202,7 @@ export class SetupComponent {
     this.nostrService.updateActivationPermissions(
       activation.clientPubkey,
       activation.pubkey,
-      activation.secret,
+      activation.secret!,
       newPermissions
     );
     

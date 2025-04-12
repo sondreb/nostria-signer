@@ -25,8 +25,9 @@ export interface ClientActivation {
   clientPubkey: string;  // Public key of the nostr client connecting to the signer
   pubkey: string;        // Public key of the client identity
   activatedDate: string; // ISO date string when activation occurred
-  secret: string;        // UUID used for activation
+  secret?: string;       // UUID used for activation, removed after activation
   permissions: string;   // Comma separated list of permissions
+  clientId?: string;     // ID of the client connection
 }
 
 @Injectable({
@@ -40,16 +41,10 @@ export class NostrService {
   // Store the Nostr account information
   account = signal<NostrAccount | null>(null);
 
-  // publicKey = '';
-
   keys = signal<NostrAccount[]>([]);
   
   // Signal to store client activations
   clientActivations = signal<ClientActivation[]>([]);
-
-  // key = computed(() => {
-  //   return this.keys().find((key: any) => key.publicKey === this.publicKey);
-  // });
 
   pool: SimplePool | undefined;
 
@@ -118,6 +113,21 @@ export class NostrService {
     };
     
     this.clientActivations.update(activations => [...activations, newActivation]);
+    this.saveClientActivations();
+  }
+
+  // Update client activation when connection is established
+  updateClientActivationOnConnect(activationIndex: number, clientPubkey: string, clientId: string): void {
+    this.clientActivations.update(activations => {
+      const updated = [...activations];
+      updated[activationIndex] = {
+        ...updated[activationIndex],
+        clientPubkey,     // Set the real client pubkey
+        clientId,         // Save the client ID
+        secret: undefined // Remove the secret as it's been used
+      };
+      return updated;
+    });
     this.saveClientActivations();
   }
 
@@ -192,23 +202,47 @@ export class NostrService {
       ],
         {
           onevent: (evt) => {
-            console.log('Event received', evt);
-
             debugger;
+            console.log('Event received', evt);
 
             const privateKeyHex = this.account()?.privateKey;
             const privateKey = hexToBytes(privateKeyHex!);
 
-            // The content of evt is a NIP-44 encrypted event, decrypt it:
-            const convKey = v2.utils.getConversationKey(privateKey, evt.pubkey);
-
-            const decrypted = v2.decrypt(evt.content, convKey);
-            console.log('Decrypted content:', decrypted);
-            console.log(JSON.stringify(decrypted, null, 2));
-
-            // {"id":"nv1jit-1","method":"connect","params":["911bd819a054536335761450e6fce916f2bae68b9cd1eeff0d6c2e4994e95034","9be97c6b-29dd-4d92-ae8d-8fa83ee4c72e"]}
-
-            debugger;
+            try {
+              // The content of evt is a NIP-44 encrypted event, decrypt it:
+              const convKey = v2.utils.getConversationKey(privateKey, evt.pubkey);
+              const decrypted = v2.decrypt(evt.content, convKey);
+              console.log('Decrypted content:', decrypted);
+              
+              // Parse the decrypted content
+              const requestData = JSON.parse(decrypted);
+              console.log(JSON.stringify(requestData, null, 2));
+              
+              // Check if this is a connect method
+              if (requestData.method === 'connect' && requestData.params?.length === 2) {
+                const [signerPubkey, secret] = requestData.params;
+                
+                // Find activation with matching secret
+                const activationIndex = this.clientActivations().findIndex(
+                  activation => activation.secret === secret
+                );
+                
+                if (activationIndex >= 0) {
+                  // Update the activation with client pubkey and ID
+                  this.updateClientActivationOnConnect(
+                    activationIndex,
+                    evt.pubkey,
+                    requestData.id
+                  );
+                  
+                  console.log('Client connection activated successfully');
+                } else {
+                  console.warn('No matching activation found for secret:', secret);
+                }
+              }
+            } catch (error) {
+              console.error('Error processing event:', error);
+            }
           },
 
           onclose: (reasons) => {
@@ -240,7 +274,6 @@ export class NostrService {
       try {
         const signerKey = JSON.parse(signerKeyString);
         this.account.set(signerKey);
-        // this.publicKey = signerKey.publicKey;
       } catch (e) {
         console.error('Error parsing stored signer key:', e);
         this.account.set(null);
@@ -252,7 +285,6 @@ export class NostrService {
   private saveSignerKey(account: NostrAccount): void {
     localStorage.setItem(STORAGE_KEYS.SIGNER_KEY, JSON.stringify(account));
     this.account.set(account);
-    // this.publicKey = account.publicKey;
   }
 
   // Generate connection URL for a given account
