@@ -262,6 +262,18 @@ export class NostrService {
     console.log('Connected to relays:', this.relays);
   }
 
+    // Update relays list and reconnect
+    updateRelays(newRelays: string[]): void {
+      // Ensure we always have at least one relay
+      if (newRelays.length === 0) {
+        newRelays = ['wss://relay.angor.io/'];
+      }
+      
+      this.relays = [...newRelays];
+      this.saveRelays();
+      this.connect();
+    }
+
   processEvent(evt: Event) {
     const privateKeyHex = this.account()?.privateKey;
     const privateKey = hexToBytes(privateKeyHex!);
@@ -274,45 +286,190 @@ export class NostrService {
       
       // Parse the decrypted content
       const requestData = JSON.parse(decrypted);
-      console.log(JSON.stringify(requestData, null, 2));
+      console.log('Request:', JSON.stringify(requestData, null, 2));
       
-      // Check if this is a connect method
-      if (requestData.method === 'connect' && requestData.params?.length === 2) {
-        const [signerPubkey, secret] = requestData.params;
-        
-        // Find activation with matching secret
-        const activationIndex = this.clientActivations().findIndex(
-          activation => activation.secret === secret
-        );
-        
-        if (activationIndex >= 0) {
-          // Update the activation with client pubkey and ID
-          this.updateClientActivationOnConnect(
-            activationIndex,
-            evt.pubkey,
-            requestData.id
-          );
-          
-          console.log('Client connection activated successfully');
-        } else {
-          console.warn('No matching activation found for secret:', secret);
+      // Check if we have a valid method and params
+      if (!requestData.method || !requestData.id) {
+        console.error('Invalid request format');
+        return;
+      }
+
+      // Look for matching client activation
+      const clientActivation = this.clientActivations().find(
+        activation => activation.clientPubkey === evt.pubkey
+      );
+
+      if (!clientActivation && requestData.method !== 'connect') {
+        console.error('Unauthorized client request:', evt.pubkey);
+        return;
+      }
+
+      // Process different method types
+      switch (requestData.method) {
+        case 'connect': {
+          if (requestData.params?.length === 2) {
+            const [signerPubkey, secret] = requestData.params;
+
+            if (signerPubkey !== this.account()?.publicKey) {
+              console.error('Signer public key mismatch:', signerPubkey);
+              // this.sendResponse(evt.pubkey, requestData.id, null, {code: 401, message: "Unauthorized"});
+              return;
+            }
+            
+            // Find activation with matching secret
+            const activationIndex = this.clientActivations().findIndex(
+              activation => activation.secret === secret
+            );
+            
+            if (activationIndex >= 0) {
+              // Update the activation with client pubkey and ID
+              this.updateClientActivationOnConnect(
+                activationIndex,
+                evt.pubkey,
+                requestData.id
+              );
+
+              debugger;
+              
+              // Send response back to client
+              this.sendResponse(evt.pubkey, requestData.id, "ack");
+              console.log('Client connection activated successfully');
+            } else {
+              console.warn('No matching activation found for secret:', secret);
+              this.sendResponse(evt.pubkey, requestData.id, null, {code: 401, message: "Unauthorized"});
+            }
+          }
+          break;
         }
+        
+        case 'get_public_key': {
+          // Check if client has permission
+          if (!this.hasPermission(clientActivation, 'get_public_key')) {
+            this.sendResponse(evt.pubkey, requestData.id, null, {code: 403, message: "Permission denied"});
+            break;
+          }
+          
+          // Get public key for the requested client identity
+          const publicKey = clientActivation!.pubkey;
+          this.sendResponse(evt.pubkey, requestData.id, publicKey);
+          break;
+        }
+        
+        case 'ping': {
+          // Simple ping-pong response
+          this.sendResponse(evt.pubkey, requestData.id, "pong");
+          break;
+        }
+        
+        case 'sign_event': {
+          if (!requestData.params || requestData.params.length < 1) {
+            this.sendResponse(evt.pubkey, requestData.id, null, {code: 400, message: "Invalid parameters"});
+            break;
+          }
+          
+          const eventToSign = requestData.params[0];
+          
+          // Check if client has permission for this event kind
+          if (!this.hasPermission(clientActivation, `sign_event:${eventToSign.kind}`)) {
+            this.sendResponse(evt.pubkey, requestData.id, null, {code: 403, message: "Permission denied for this event kind"});
+            break;
+          }
+          
+          // TODO: Implement actual event signing
+          console.log('Request to sign event:', eventToSign);
+          this.sendResponse(evt.pubkey, requestData.id, null, {code: 501, message: "Signing not implemented yet"});
+          break;
+        }
+        
+        case 'nip04_encrypt':
+        case 'nip04_decrypt': {
+          if (!this.hasPermission(clientActivation, requestData.method)) {
+            this.sendResponse(evt.pubkey, requestData.id, null, {code: 403, message: "Permission denied"});
+            break;
+          }
+          
+          // TODO: Implement NIP-04 encryption/decryption
+          console.log(`Request for ${requestData.method}:`, requestData.params);
+          this.sendResponse(evt.pubkey, requestData.id, null, {code: 501, message: `${requestData.method} not implemented yet`});
+          break;
+        }
+        
+        case 'nip44_encrypt':
+        case 'nip44_decrypt': {
+          if (!this.hasPermission(clientActivation, requestData.method)) {
+            this.sendResponse(evt.pubkey, requestData.id, null, {code: 403, message: "Permission denied"});
+            break;
+          }
+          
+          // TODO: Implement NIP-44 encryption/decryption
+          console.log(`Request for ${requestData.method}:`, requestData.params);
+          this.sendResponse(evt.pubkey, requestData.id, null, {code: 501, message: `${requestData.method} not implemented yet`});
+          break;
+        }
+        
+        default:
+          console.warn('Unhandled method:', requestData.method);
+          this.sendResponse(evt.pubkey, requestData.id, null, {code: 400, message: "Unsupported method"});
+          break;
       }
     } catch (error) {
       console.error('Error processing event:', error);
     }
   }
 
-  // Update relays list and reconnect
-  updateRelays(newRelays: string[]): void {
-    // Ensure we always have at least one relay
-    if (newRelays.length === 0) {
-      newRelays = ['wss://relay.angor.io/'];
+  // Helper method to send responses back to clients
+  private sendResponse(
+    pubkey: string, 
+    id: string, 
+    result: any = null, 
+    error: {code: number, message: string} | null = null
+  ): void {
+    if (!this.pool) {
+      console.error('Cannot send response: pool not initialized');
+      return;
     }
+    
+    const response = {
+      id,
+      result,
+      error
+    };
+    
+    try {
+      const privateKeyHex = this.account()?.privateKey;
+      const privateKey = hexToBytes(privateKeyHex!);
+      const convKey = v2.utils.getConversationKey(privateKey, pubkey);
+      
+      // Encrypt the response
+      const encryptedContent = v2.encrypt(JSON.stringify(response), convKey);
+      
+      const responseEvent = {
+        kind: kinds.NostrConnect,
+        pubkey: this.account()!.publicKey,
+        created_at: Math.floor(Date.now() / 1000),
+        tags: [['p', pubkey]],
+        content: encryptedContent
+      };
 
-    this.relays = [...newRelays];
-    this.saveRelays();
-    this.connect();
+      debugger;
+      
+      // TODO: Properly sign the event
+      // For now just indicating where signing would happen
+      console.log('Sending response:', responseEvent);
+      
+      // Publish to relays
+      // this.pool.publish(this.relays, responseEvent);
+    } catch (error) {
+      console.error('Error sending response:', error);
+    }
+  }
+  
+  // Helper to check if client has a specific permission
+  private hasPermission(activation: ClientActivation | undefined, permission: string): boolean {
+    if (!activation) return false;
+    
+    const permissions = activation.permissions.split(',').map(p => p.trim());
+    return permissions.includes(permission);
   }
 
   // Load the signer key from local storage
