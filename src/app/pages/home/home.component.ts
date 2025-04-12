@@ -18,7 +18,7 @@ export class HomeComponent {
   importError = signal<string | null>(null);
   
   async onGetStarted(): Promise<void> {
-    await this.nostrService.generateAccount();
+    await this.nostrService.generateSignerAccount();
   }
   
   toggleImportView(): void {

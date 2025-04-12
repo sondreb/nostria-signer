@@ -17,7 +17,7 @@ export const STORAGE_KEYS = {
 export interface NostrAccount {
   publicKey: string;
   privateKey: string;
-  secret: string;
+  secret?: string;
 }
 
 @Injectable({
@@ -44,7 +44,7 @@ export class NostrService {
   constructor() {
     // Load the signer key
     this.loadSignerKey();
-    
+
     // Load saved relays if they exist
     this.loadRelays();
 
@@ -96,7 +96,7 @@ export class NostrService {
     if (this.pool) {
       this.pool.close(this.relays);
     }
-    
+
     this.pool = new SimplePool();
 
     // Only subscribe if we have keys
@@ -138,7 +138,7 @@ export class NostrService {
     if (newRelays.length === 0) {
       newRelays = ['wss://relay.angor.io/'];
     }
-    
+
     this.relays = [...newRelays];
     this.saveRelays();
     this.connect();
@@ -180,21 +180,47 @@ export class NostrService {
   // Generate a new Nostr account
   async generateAccount(): Promise<void> {
     try {
+
+      const secret = uuidv4();
+
+      // this.keys.update(array => [...array, keyPair]);
+      // localStorage.setItem(STORAGE_KEYS.SIGNER_KEY, JSON.stringify(this.keys()));
+
+      let privateKeyClient = generateSecretKey();
+      let publicKeyClient = getPublicKey(privateKeyClient);
+
+      const keyPairClient: NostrAccount = {
+        publicKey: publicKeyClient,
+        privateKey: bytesToHex(privateKeyClient),
+        secret
+      };
+
+      this.keys.update(array => [...array, keyPairClient]);
+      localStorage.setItem(STORAGE_KEYS.SIGNER_KEYS, JSON.stringify(this.keys()));
+
+      // Navigate to the setup page to display the connection URL
+      this.router.navigate(['/setup']);
+    } catch (error) {
+      console.error('Error generating Nostr account:', error);
+    }
+  }
+
+  async generateSignerAccount(): Promise<void> {
+    try {
       let privateKey = generateSecretKey();
       let publicKey = getPublicKey(privateKey);
       const secret = uuidv4();
 
       const keyPair: NostrAccount = {
         publicKey,
-        privateKey: bytesToHex(privateKey),
-        secret
+        privateKey: bytesToHex(privateKey)
       };
 
       // Save as signer key
       this.saveSignerKey(keyPair);
 
       // this.keys.update(array => [...array, keyPair]);
-      localStorage.setItem(STORAGE_KEYS.SIGNER_KEY, JSON.stringify(this.keys()));
+      // localStorage.setItem(STORAGE_KEYS.SIGNER_KEY, JSON.stringify(this.keys()));
 
       let privateKeyClient = generateSecretKey();
       let publicKeyClient = getPublicKey(privateKeyClient);
@@ -245,6 +271,9 @@ export class NostrService {
         // Assume it's hex format
         try {
           privateKeyBytes = hexToBytes(nsecKey);
+
+          // Generate a new client account.
+          await this.generateAccount();
         } catch (e) {
           console.error('Invalid hex format:', e);
           return false;
@@ -253,20 +282,21 @@ export class NostrService {
 
       // Derive public key from private key
       const publicKey = getPublicKey(privateKeyBytes);
-      const secret = uuidv4();
 
       const keyPair: NostrAccount = {
         publicKey,
-        privateKey: bytesToHex(privateKeyBytes),
-        secret
+        privateKey: bytesToHex(privateKeyBytes)
       };
 
       // Save as signer key
       this.saveSignerKey(keyPair);
 
+      // Generate a new client account.
+      await this.generateAccount();
+
       // Add to keys collection
-      this.keys.update(array => [...array, keyPair]);
-      localStorage.setItem(STORAGE_KEYS.SIGNER_KEYS, JSON.stringify(this.keys()));
+      // this.keys.update(array => [...array, keyPair]);
+      // localStorage.setItem(STORAGE_KEYS.SIGNER_KEYS, JSON.stringify(this.keys()));
 
       // Navigate to the setup page
       this.router.navigate(['/setup']);
