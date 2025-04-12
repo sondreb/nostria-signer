@@ -71,12 +71,11 @@
 
                 @if (isEditingPermissions(activation)) {
                 <div class="permissions-edit">
-                  <input 
-                    type="text" 
+                  <textarea 
                     [ngModel]="permissionsInput()[getActivationId(activation)]"
                     (ngModelChange)="updatePermissionsInput(activation, $event)"
                     class="permissions-input" 
-                    placeholder="E.g., sign_event,get_public_key" />
+                    placeholder="E.g., get_public_key,sign_event:0,nip44_encrypt"></textarea>
                   <div class="edit-actions">
                     <button class="save-button" (click)="savePermissions(activation)">Save</button>
                     <button class="cancel-button" (click)="cancelEditPermissions(activation)">Cancel</button>
@@ -84,7 +83,7 @@
                 </div>
                 } @else {
                 <div class="permissions-display">
-                  <span class="permissions-text">{{ activation.permissions }}</span>
+                  <span class="permissions-text">{{ formatPermissions(activation.permissions) }}</span>
                   <button class="edit-button" (click)="startEditingPermissions(activation)">Edit</button>
                 </div>
                 }

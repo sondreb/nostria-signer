@@ -102,6 +102,43 @@ export class NostrService {
     localStorage.setItem(STORAGE_KEYS.SIGNER_CLIENTS, JSON.stringify(this.clientActivations()));
   }
 
+  // Get default permissions in the correct format
+  getDefaultPermissions(): string {
+    const permissions = [
+      "get_public_key",
+      "nip04_encrypt",
+      "nip04_decrypt",
+      "nip44_encrypt",
+      "nip44_decrypt",
+      "decrypt_zap_event",
+      "sign_event:0",
+      "sign_event:1",
+      "sign_event:3",
+      "sign_event:4",
+      "sign_event:5",
+      "sign_event:6",
+      "sign_event:7",
+      "sign_event:9734",
+      "sign_event:9735",
+      "sign_event:10000",
+      "sign_event:10002",
+      "sign_event:10003",
+      "sign_event:10013",
+      "sign_event:31234",
+      "sign_event:30078",
+      "sign_event:22242",
+      "sign_event:27235",
+      "sign_event:30023"
+    ];
+    
+    return permissions.join(',');
+  }
+
+  // Format permissions for display
+  formatPermissionsForDisplay(permissionsString: string): string {
+    return permissionsString;
+  }
+
   // Add a new client activation
   addClientActivation(clientPubkey: string, pubkey: string, secret: string): void {
     const newActivation: ClientActivation = {
@@ -109,7 +146,7 @@ export class NostrService {
       pubkey,
       activatedDate: new Date().toISOString(),
       secret,
-      permissions: 'sign_event' // Default permission
+      permissions: this.getDefaultPermissions() // Set default permissions
     };
     
     this.clientActivations.update(activations => [...activations, newActivation]);

@@ -239,6 +239,10 @@ export class SetupComponent {
     return `${activation.clientPubkey}:${activation.pubkey}:${activation.secret}`;
   }
 
+  formatPermissions(permissionsString: string): string {
+    return this.nostrService.formatPermissionsForDisplay(permissionsString);
+  }
+
   formatDate(dateString: string): string {
     return new Date(dateString).toLocaleString();
   }
