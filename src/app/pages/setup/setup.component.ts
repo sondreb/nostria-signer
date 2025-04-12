@@ -18,7 +18,9 @@ export class SetupComponent {
   private nostrService = inject(NostrService);
 
   keys = this.nostrService.keys;
+  account = this.nostrService.account;
   showPrivateKeys = signal<Record<string, boolean>>({});
+  activeTab = signal<'clients' | 'signer'>('clients');
 
   pool: SimplePool;
 
@@ -58,6 +60,10 @@ export class SetupComponent {
     );
 
     console.log('Connected to relays:', this.nostrService.relays);
+  }
+
+  setActiveTab(tab: 'clients' | 'signer') {
+    this.activeTab.set(tab);
   }
 
   hasKeys() {
