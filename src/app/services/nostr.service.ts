@@ -332,8 +332,16 @@ export class NostrService {
       // Process different method types
       switch (requestData.method) {
         case 'connect': {
-          if (requestData.params?.length === 2) {
+          if (requestData.params?.length > 1) {
+            // Check if the client is already activated
             const [signerPubkey, secret] = requestData.params;
+
+            // Some clients will send perms, example:
+            // "params": [
+            //   "5a149ffc729683947f4b0e6fef437874a51b365c81a3e717117c3d306a11505f",
+            //   "cb0d1290-bd26-4e37-bd06-6623eb9445ac",
+            //   "sign_event:22242,nip04_encrypt,nip04_decrypt,nip44_encrypt,nip44_decrypt"
+            // ]
 
             if (signerPubkey !== this.account()?.publicKey) {
               console.error('Signer public key mismatch:', signerPubkey);
