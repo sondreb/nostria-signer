@@ -601,6 +601,9 @@ export class NostrService {
       // The actual client pubkey will be updated when a real client connects
       this.addClientActivation('pending', publicKeyClient, secret);
 
+      // Connect to relays after generating signer.
+      this.connect();
+
       // Navigate to the setup page to display the connection URL
       this.router.navigate(['/setup']);
     } catch (error) {
@@ -640,6 +643,9 @@ export class NostrService {
 
       this.saveSignerKey(keyPair);
       await this.generateAccount();
+
+      // Make sure we connect after importing signer identity.
+      this.connect();
 
       this.router.navigate(['/setup']);
       return true;
