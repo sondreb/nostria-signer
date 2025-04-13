@@ -447,3 +447,19 @@ button.delete-button:hover {
 .mt-3 {
   margin-top: 1rem;
 }
+
+/* Add styles for the format toggle button */
+.format-button {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  margin-left: 5px;
+}
+
+.format-button:hover {
+  background-color: #5a6268;
+}

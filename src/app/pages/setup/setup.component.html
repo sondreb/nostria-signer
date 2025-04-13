@@ -21,8 +21,12 @@
       <div class="mb-3">
         <h3>Nostr Public Key:</h3>
         <div class="copy-container">
-          <span class="copy-text">{{ key.publicKey }}</span>
+          <span class="copy-text">{{ getDisplayPublicKey(key.publicKey) }}</span>
+          <button class="format-button" (click)="togglePubkeyFormat(key.publicKey)">
+            {{ isHexFormatActive(key.publicKey) ? 'Show npub' : 'Show hex' }}
+          </button>
           <button class="copy-button" (click)="copyToClipboard(key.publicKey)">Copy</button>
+        
         </div>
       </div>
 
@@ -121,7 +125,14 @@
       <div class="mb-3">
         <h3>Signer Public Key:</h3>
         <div class="copy-container">
-          <span class="copy-text">{{ account()?.publicKey }}</span>
+          <!-- <span class="copy-text">{{ account()?.publicKey }}</span> -->
+          
+          <span class="copy-text">{{ getDisplayPublicKey(account()!.publicKey) }}</span>
+          <button class="format-button" (click)="togglePubkeyFormat(account()!.publicKey)">
+            {{ isHexFormatActive(account()!.publicKey) ? 'Show npub' : 'Show hex' }}
+          </button>
+
+
           <button class="copy-button" (click)="copyToClipboard(account()?.publicKey || '')">Copy</button>
         </div>
       </div>

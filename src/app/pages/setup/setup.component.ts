@@ -30,6 +30,8 @@ export class SetupComponent {
   importKeyValue = signal<string>('');
   importError = signal<string | null>(null);
   importSuccess = signal<boolean>(false);
+  // Add a signal to track which keys are displaying in hex format (default is npub)
+  showHexFormat = signal<Record<string, boolean>>({});
 
   constructor() {}
 
@@ -103,6 +105,30 @@ export class SetupComponent {
       .catch(err => {
         console.error('Failed to copy: ', err);
       });
+  }
+
+  // Add method to toggle between npub and hex format
+  togglePubkeyFormat(publicKey: string): void {
+    this.showHexFormat.update(formats => {
+      const currentFormats = { ...formats };
+      currentFormats[publicKey] = !currentFormats[publicKey];
+      return currentFormats;
+    });
+  }
+
+  // Method to check if hex format is active for a specific key
+  isHexFormatActive(publicKey: string): boolean {
+    return !!this.showHexFormat()[publicKey];
+  }
+
+  // Method to get the display format of the public key
+  getDisplayPublicKey(publicKey: string): string {
+    if (this.isHexFormatActive(publicKey)) {
+      // If hex format is active, show the raw hex (could be from npub or directly a hex key)
+      return this.nostrService.convertToHexIfNeeded(publicKey);
+    }
+    // Otherwise show the npub format
+    return this.nostrService.convertToNpubIfNeeded(publicKey);
   }
 
   // Keep this method as a fallback for any remaining code that might use it

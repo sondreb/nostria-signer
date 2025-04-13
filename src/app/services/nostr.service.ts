@@ -684,4 +684,33 @@ export class NostrService {
       localStorage.removeItem(STORAGE_KEYS.SIGNER_KEY);
     }
   }
+
+  // Convert to hex if the key is in npub format
+  convertToHexIfNeeded(key: string): string {
+    if (key.startsWith('npub')) {
+      try {
+        // Use nip19.decode to convert npub to hex
+        const decoded = nip19.decode(key);
+        if (decoded.type === 'npub') {
+          return decoded.data as string;
+        }
+      } catch (e) {
+        console.error('Error decoding npub:', e);
+      }
+    }
+    return key; // Return the original if it's already hex or conversion fails
+  }
+
+  // Convert to npub if the key is in hex format
+  convertToNpubIfNeeded(key: string): string {
+    if (!key.startsWith('npub')) {
+      try {
+        // Use nip19.npubEncode to convert hex to npub
+        return nip19.npubEncode(key);
+      } catch (e) {
+        console.error('Error encoding to npub:', e);
+      }
+    }
+    return key; // Return the original if it's already npub or conversion fails
+  }
 }
