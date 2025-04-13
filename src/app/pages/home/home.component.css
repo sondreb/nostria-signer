@@ -1,4 +1,4 @@
-.intro-image {
+/* .intro-image {
   height: 240px;
   display: flex;
   align-items: center;
@@ -6,17 +6,13 @@
   background-image: radial-gradient(circle, rgba(99, 102, 241, 0.2) 0%, rgba(99, 102, 241, 0.05) 70%);
   border-radius: 1rem;
   margin: 2rem 0;
-}
+} */
 
 .app-logo {
   max-width: 200px;
   height: auto;
   filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
   transition: transform 0.3s ease;
-}
-
-.app-logo:hover {
-  transform: scale(1.05);
 }
 
 .action-buttons {
@@ -66,4 +62,27 @@
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+.info-box {
+  background-color: rgba(99, 102, 241, 0.1);
+  border-left: 4px solid rgba(99, 102, 241, 0.8);
+  padding: 1rem;
+  border-radius: 0.25rem;
+  text-align: left;
+}
+
+.info-box h3 {
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+  color: #4f46e5;
+}
+
+.warning-message {
+  background-color: rgba(234, 179, 8, 0.1);
+  border-left: 4px solid #eab308;
+  padding: 0.75rem;
+  border-radius: 0.25rem;
+  text-align: left;
+  color: #854d0e;
 }

@@ -7,28 +7,44 @@
   } @else {
     <div class="card">
       <div class="text-center">
+        <img src="icons/icon-384x384.png" alt="Nostria Signer Logo" class="app-logo">
+        
         <h1>Welcome to Nostria Signer</h1>
         <p class="mb-4">
           Your secure and easy-to-use Nostr identity manager for remote signing with the Nostr Connect protocol (NIP-46).
         </p>
         
-        <div class="intro-image mb-4">
-          <img src="icons/icon-384x384.png" alt="Nostria Signer Logo" class="app-logo">
+        <div class="info-box mb-4">
+          <h3>Important: About Signer Identity</h3>
+          <p>
+            The key you create or import here is your <strong>Signer Identity</strong>, which is 
+            separate from your regular Nostr identity.
+          </p>
+          <p>
+            This Signer Identity will manage your Nostr accounts securely without exposing them.
+            <strong>Do not</strong> import your regular Nostr private keys on this screen, first generate or import signer key, then you can manage client identities.
+          </p>
         </div>
         
         @if (!showImport()) {
           <p>
-            Click "Get Started" to generate a new Nostr Signer identity or import an existing one.
+            Create a new Signer Identity or import an existing Signer key.
           </p>
           
           <div class="action-buttons">
-            <button (click)="onGetStarted()" class="mt-4 primary-btn">Generate New Key</button>
-            <button (click)="toggleImportView()" class="mt-4 secondary-btn">Import Existing Key</button>
+            <button (click)="onGetStarted()" class="mt-4 primary-btn">Generate New Signer Key</button>
+            <button (click)="toggleImportView()" class="mt-4 secondary-btn">Import Existing Signer Key</button>
           </div>
         } @else {
           <div class="import-form">
-            <h2>Import Existing Key</h2>
-            <p>Enter your private key (nsec or hex format)</p>
+            <h2>Import Existing Signer Key</h2>
+            <p>Enter your Signer private key (nsec or hex format)</p>
+            
+            <div class="warning-message mb-3">
+              <strong>Warning:</strong> This should be your dedicated Nostria Signer key, 
+              not your regular Nostr identity. Importing your main Nostr identity here is not 
+              recommended and defeats the security purpose of using a Signer.
+            </div>
             
             @if (importError()) {
               <div class="error-message">{{ importError() }}</div>
