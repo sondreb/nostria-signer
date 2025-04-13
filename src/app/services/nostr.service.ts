@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { Event, generateSecretKey, getPublicKey } from 'nostr-tools/pure';
+import { Event, EventTemplate, finalizeEvent, generateSecretKey, getPublicKey, UnsignedEvent } from 'nostr-tools/pure';
 import { v4 as uuidv4 } from 'uuid';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
 import { BunkerSigner, parseBunkerInput } from 'nostr-tools/nip46';
@@ -443,7 +443,7 @@ export class NostrService {
       // Encrypt the response
       const encryptedContent = v2.encrypt(JSON.stringify(response), convKey);
       
-      const responseEvent = {
+      const responseEvent: UnsignedEvent = {
         kind: kinds.NostrConnect,
         pubkey: this.account()!.publicKey,
         created_at: Math.floor(Date.now() / 1000),
@@ -452,13 +452,15 @@ export class NostrService {
       };
 
       debugger;
+
+      const verifiedEvent = finalizeEvent(responseEvent, privateKey);
       
       // TODO: Properly sign the event
       // For now just indicating where signing would happen
       console.log('Sending response:', responseEvent);
       
       // Publish to relays
-      // this.pool.publish(this.relays, responseEvent);
+      this.pool.publish(this.relays, verifiedEvent);
     } catch (error) {
       console.error('Error sending response:', error);
     }
