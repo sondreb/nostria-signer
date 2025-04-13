@@ -1,54 +1,61 @@
 <div class="container">
-  <div class="card">
+  @if (loading()) {
     <div class="text-center">
-      <h1>Welcome to Nostria Signer</h1>
-      <p class="mb-4">
-        Your secure and easy-to-use Nostr identity manager for remote signing with the Nostr Connect protocol (NIP-46).
-      </p>
-      
-      <div class="intro-image mb-4">
-        <img src="icons/icon-384x384.png" alt="Nostria Signer Logo" class="app-logo">
-      </div>
-      
-      @if (!showImport()) {
-        <p>
-          Click "Get Started" to generate a new Nostr Signer identity or import an existing one.
+      <div class="spinner"></div>
+      <p>Loading...</p>
+    </div>
+  } @else {
+    <div class="card">
+      <div class="text-center">
+        <h1>Welcome to Nostria Signer</h1>
+        <p class="mb-4">
+          Your secure and easy-to-use Nostr identity manager for remote signing with the Nostr Connect protocol (NIP-46).
         </p>
         
-        <div class="action-buttons">
-          <button (click)="onGetStarted()" class="mt-4 primary-btn">Generate New Key</button>
-          <button (click)="toggleImportView()" class="mt-4 secondary-btn">Import Existing Key</button>
+        <div class="intro-image mb-4">
+          <img src="icons/icon-384x384.png" alt="Nostria Signer Logo" class="app-logo">
         </div>
-      } @else {
-        <div class="import-form">
-          <h2>Import Existing Key</h2>
-          <p>Enter your private key (nsec or hex format)</p>
-          
-          @if (importError()) {
-            <div class="error-message">{{ importError() }}</div>
-          }
-          
-          <div class="form-group">
-            <input 
-              type="password" 
-              [ngModel]="importedKey()" 
-              (ngModelChange)="importedKey.set($event)" 
-              placeholder="nsec or hex private key"
-              class="form-control"
-              autocomplete="off"
-              name="off"
-              data-lpignore="true"
-              data-1p-ignore="true"
-              data-form-type="other"
-            />
-          </div>
+        
+        @if (!showImport()) {
+          <p>
+            Click "Get Started" to generate a new Nostr Signer identity or import an existing one.
+          </p>
           
           <div class="action-buttons">
-            <button (click)="onImportKey()" class="mt-3 primary-btn">Import</button>
-            <button (click)="toggleImportView()" class="mt-3 secondary-btn">Cancel</button>
+            <button (click)="onGetStarted()" class="mt-4 primary-btn">Generate New Key</button>
+            <button (click)="toggleImportView()" class="mt-4 secondary-btn">Import Existing Key</button>
           </div>
-        </div>
-      }
+        } @else {
+          <div class="import-form">
+            <h2>Import Existing Key</h2>
+            <p>Enter your private key (nsec or hex format)</p>
+            
+            @if (importError()) {
+              <div class="error-message">{{ importError() }}</div>
+            }
+            
+            <div class="form-group">
+              <input 
+                type="password" 
+                [ngModel]="importedKey()" 
+                (ngModelChange)="importedKey.set($event)" 
+                placeholder="nsec or hex private key"
+                class="form-control"
+                autocomplete="off"
+                name="off"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-form-type="other"
+              />
+            </div>
+            
+            <div class="action-buttons">
+              <button (click)="onImportKey()" class="mt-3 primary-btn">Import</button>
+              <button (click)="toggleImportView()" class="mt-3 secondary-btn">Cancel</button>
+            </div>
+          </div>
+        }
+      </div>
     </div>
-  </div>
+  }
 </div>

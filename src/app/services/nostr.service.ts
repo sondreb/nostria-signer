@@ -48,6 +48,8 @@ export class NostrService {
 
   pool: SimplePool | undefined;
 
+  private accountExists = signal<boolean>(false);
+
   constructor() {
     // Load the signer key
     this.loadSignerKey();
@@ -79,6 +81,25 @@ export class NostrService {
     }
 
     this.connect();
+  }
+
+  hasAccount(): boolean {
+    return this.accountExists();
+  }
+
+  async checkExistingAccount(): Promise<boolean> {
+    try {
+      // Implementation will depend on how you store the account
+      // Example using localStorage:
+      const storedKey = localStorage.getItem(STORAGE_KEYS.SIGNER_KEY);
+      const hasAccount = !!storedKey;
+      this.accountExists.set(hasAccount);
+      return hasAccount;
+    } catch (error) {
+      console.error('Error checking for existing account:', error);
+      this.accountExists.set(false);
+      return false;
+    }
   }
 
   // Load client activations from localStorage
