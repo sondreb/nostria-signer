@@ -4,36 +4,71 @@
   "version": "0.1.0",
   "identifier": "no.brainbox.nostria-signer",
   "build": {
-    "beforeDevCommand": "npm run start",
-    "devUrl": "http://localhost:4646",
     "beforeBuildCommand": "npm run build",
-    "frontendDist": "../dist/app/browser"
+    "beforeDevCommand": "npm run dev",
+    "devPath": "http://localhost:1420",
+    "distDir": "../dist"
   },
-  "app": {
-    "windows": [
-      {
-        "title": "Nostria Signer",
-        "width": 800,
-        "height": 600
+  "package": {
+    "productName": "Nostria Signer",
+    "version": "../package.json"
+  },
+  "tauri": {
+    "bundle": {
+      "active": true,
+      "category": "DeveloperTool",
+      "copyright": "",
+      "deb": {
+        "depends": []
+      },
+      "externalBin": [],
+      "icon": [
+        "icons/32x32.png",
+        "icons/128x128.png",
+        "icons/128x128@2x.png",
+        "icons/icon.icns",
+        "icons/icon.ico"
+      ],
+      "identifier": "nostria.signer",
+      "longDescription": "",
+      "macOS": {
+        "entitlements": null,
+        "exceptionDomain": "",
+        "frameworks": [],
+        "providerShortName": null,
+        "signingIdentity": null
+      },
+      "resources": [],
+      "shortDescription": "",
+      "targets": "all",
+      "windows": {
+        "certificateThumbprint": null,
+        "digestAlgorithm": "sha256",
+        "timestampUrl": ""
       }
-    ],
+    },
     "security": {
       "csp": null
-    }
-  },
-  "bundle": {
-    "active": true,
-    "targets": [
-      "msi", 
-      "appimage", 
-      "dmg"
-    ],
-    "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.icns",
-      "icons/icon.ico"
+    },
+    "android": {
+      "applicationId": "nostria.signer.app",
+      "minSdkVersion": 24,
+      "targetSdkVersion": 33,
+      "permissions": [
+        "android.permission.INTERNET"
+      ]
+    },
+    "updater": {
+      "active": false
+    },
+    "windows": [
+      {
+        "fullscreen": false,
+        "height": 600,
+        "resizable": true,
+        "title": "Nostria Signer",
+        "width": 800
+      }
     ]
   }
 }

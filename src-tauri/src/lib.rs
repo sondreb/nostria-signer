@@ -9,6 +9,13 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![greet])
+        #[cfg(target_os = "android")]
+        .android_setup(|app| {
+            app.set_content_intent(tauri_app::ActivityInfo {
+                class_name: "nostria.signer.MainActivity".to_string(),
+            });
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
