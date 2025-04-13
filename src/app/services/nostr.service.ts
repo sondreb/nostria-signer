@@ -270,11 +270,8 @@ export class NostrService {
       ],
         {
           onevent: (evt) => {
-            debugger;
             console.log('Event received', evt);
-
             this.processEvent(evt);
-
           },
 
           onclose: (reasons) => {
@@ -361,8 +358,6 @@ export class NostrService {
                 evt.pubkey,
                 requestData.id
               );
-
-              debugger;
 
               // Send response back to client
               this.sendResponse(evt.pubkey, requestData.id, "ack");
@@ -484,8 +479,6 @@ export class NostrService {
         content: encryptedContent
       };
 
-      debugger;
-
       const verifiedEvent = finalizeEvent(responseEvent, privateKey);
 
       // TODO: Properly sign the event
@@ -552,11 +545,11 @@ export class NostrService {
   }
 
   // Generate a new Nostr account
-  async generateAccount(): Promise<void> {
+  async generateAccount(privateKey?: Uint8Array): Promise<void> {
     try {
       const secret = uuidv4();
 
-      let privateKeyClient = generateSecretKey();
+      let privateKeyClient = privateKey ?? generateSecretKey();
       let publicKeyClient = getPublicKey(privateKeyClient);
 
       const keyPairClient: NostrAccount = {
@@ -571,9 +564,6 @@ export class NostrService {
       // When a new client identity is created, register a placeholder activation
       // The actual client pubkey will be updated when a real client connects
       this.addClientActivation('pending', publicKeyClient, secret);
-
-      // Navigate to the setup page to display the connection URL
-      this.router.navigate(['/setup']);
     } catch (error) {
       console.error('Error generating Nostr account:', error);
     }
@@ -620,6 +610,51 @@ export class NostrService {
   }
 
   // Import an existing Nostr private key (nsec)
+  async importSignerAccount(nsecKey: string): Promise<boolean> {
+    try {
+      let privateKeyBytes: Uint8Array;
+
+      if (nsecKey.startsWith('nsec')) {
+        try {
+          const decoded = nip19.decode(nsecKey);
+          privateKeyBytes = decoded.data as Uint8Array;
+        } catch (e) {
+          console.error('Invalid nsec format:', e);
+          return false;
+        }
+      } else {
+        try {
+          privateKeyBytes = hexToBytes(nsecKey);
+        } catch (e) {
+          console.error('Invalid hex format:', e);
+          return false;
+        }
+      }
+
+      const publicKey = getPublicKey(privateKeyBytes);
+
+      const keyPair: NostrAccount = {
+        publicKey,
+        privateKey: bytesToHex(privateKeyBytes)
+      };
+
+      this.saveSignerKey(keyPair);
+
+      // 
+      await this.generateAccount();
+
+      // Make sure we connect after importing signer identity.
+      this.connect();
+
+      this.router.navigate(['/setup']);
+      return true;
+    } catch (error) {
+      console.error('Error importing Nostr account:', error);
+      return false;
+    }
+  }
+
+  // Import an existing Nostr private key (nsec)
   async importAccount(nsecKey: string): Promise<boolean> {
     try {
       let privateKeyBytes: Uint8Array;
@@ -635,27 +670,24 @@ export class NostrService {
       } else {
         try {
           privateKeyBytes = hexToBytes(nsecKey);
-          await this.generateAccount();
         } catch (e) {
           console.error('Invalid hex format:', e);
           return false;
         }
       }
 
-      const publicKey = getPublicKey(privateKeyBytes);
+      // const publicKey = getPublicKey(privateKeyBytes);
 
-      const keyPair: NostrAccount = {
-        publicKey,
-        privateKey: bytesToHex(privateKeyBytes)
-      };
+      // const secret = uuidv4();
 
-      this.saveSignerKey(keyPair);
-      await this.generateAccount();
+      // const keyPair: NostrAccount = {
+      //   publicKey,
+      //   privateKey: bytesToHex(privateKeyBytes),
+      //   secret
+      // };
 
-      // Make sure we connect after importing signer identity.
-      this.connect();
-
-      this.router.navigate(['/setup']);
+      // this.saveSignerKey(keyPair);
+      await this.generateAccount(privateKeyBytes);
       return true;
     } catch (error) {
       console.error('Error importing Nostr account:', error);

@@ -55,7 +55,7 @@ export class HomeComponent {
       return;
     }
     
-    const success = await this.nostrService.importAccount(key.trim());
+    const success = await this.nostrService.importSignerAccount(key.trim());
     
     if (!success) {
       this.importError.set('Invalid private key format. Please check and try again.');
