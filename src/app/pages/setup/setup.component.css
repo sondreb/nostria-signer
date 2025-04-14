@@ -110,7 +110,7 @@
 }
 
 .copy-container {
-  background-color: #f1f5f9;
+  background-color: var(--copy-bg);
   border-radius: var(--radius-md);
   padding: 0.75rem;
   margin-bottom: 1.25rem;
@@ -118,10 +118,11 @@
   display: flex;
   align-items: center;
   transition: background-color 0.2s;
+  border: 1px solid var(--border-color);
 }
 
 .copy-container:hover {
-  background-color: #e2e8f0;
+  background-color: var(--border-color);
 }
 
 .copy-text {
@@ -131,11 +132,21 @@
   word-break: break-all;
   padding-right: 0.5rem;
   user-select: all;
+  color: var(--text-color);
 }
 
 .masked-key {
   font-family: monospace;
   letter-spacing: 2px;
+}
+
+.connection-url {
+  background-color: var(--copy-bg);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin: 1rem 0;
+  position: relative;
+  border: 1px dashed var(--border-color);
 }
 
 .actions {

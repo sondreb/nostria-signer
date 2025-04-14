@@ -237,6 +237,7 @@ select {
   font-family: monospace;
   word-break: break-all;
   padding-right: 0.5rem;
+  color: var(--text-color);
 }
 
 .copy-button {
