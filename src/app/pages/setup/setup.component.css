@@ -700,3 +700,49 @@
     flex: 1;
   }
 }
+
+/* Logo styles */
+.logo-container {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 10;
+}
+
+.nostria-logo {
+  width: 100px; 
+  height: 100px;
+  border-radius: 50%;
+  box-shadow: var(--shadow-lg);
+  background-color: var(--card-bg);
+  padding: 0.3rem;
+  /* border: 2px solid var(--primary-color); */
+  transition: transform 0.3s ease;
+}
+
+/* .nostria-logo:hover {
+  transform: scale(1.1) rotate(10deg);
+} */
+
+/* Add some top margin to the container to make space for the logo */
+.dashboard-container {
+  padding-top: 2rem;
+}
+
+/* On smaller screens, make adjustments */
+@media (max-width: 768px) {
+  .logo-container {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1rem;
+    top: 0;
+    left: 0;
+  }
+  
+  .nostria-logo {
+    width: 100px;
+    height: 100px;
+    margin-top: 1em;
+  }
+}
