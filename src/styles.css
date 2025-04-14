@@ -224,12 +224,14 @@ select {
 .copy-container {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   background-color: var(--copy-bg);
   border-radius: var(--radius-md);
   padding: 0.75rem;
   margin: 1rem 0;
   border: 1px solid var(--border-color);
-  overflow: hidden;
+  overflow: visible;
+  gap: 0.75rem;
 }
 
 .copy-text {
@@ -244,6 +246,96 @@ select {
   flex-shrink: 0;
   padding: 0.5rem 0.75rem;
   font-size: 0.875rem;
+}
+
+/* Unified action buttons for copy, reveal, format toggle, etc. */
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--primary-light);
+  color: var(--primary-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.4rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  height: auto; /* Changed from fixed height */
+  min-width: 4rem;
+  min-height: 2rem;
+  white-space: nowrap;
+  overflow: visible; /* Ensure content isn't clipped */
+  z-index: 2; /* Add z-index to ensure button appears above other elements */
+}
+
+.action-btn:hover {
+  background-color: var(--primary-color);
+  color: white;
+  transform: translateY(-1px);
+}
+
+.action-btn:active {
+  transform: translateY(0);
+}
+
+.action-btn-icon {
+  margin-right: 0.25rem;
+}
+
+/* Add danger variant for action buttons */
+.action-btn-danger {
+  background-color: var(--error-light);
+  color: var(--error-color);
+  font-weight: 600; /* Make text more visible */
+  min-width: 80px; /* Ensure minimum width */
+}
+
+.action-btn-danger:hover {
+  background-color: var(--error-color);
+  color: white;
+}
+
+/* Ensure activation lists don't clip content */
+.activations-list {
+  background-color: var(--info-box-bg);
+  border-radius: var(--radius-md);
+  overflow: visible; /* Changed from 'hidden' to 'visible' */
+  margin-bottom: 1rem;
+}
+
+.button-group {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* Override for existing button styles that might conflict */
+.copy-button,
+.format-button,
+.reveal-button,
+.icon-button,
+.edit-button {
+  background-color: var(--primary-light);
+  color: var(--primary-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.4rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  height: 2rem;
+  min-width: 4rem;
+}
+
+.copy-button:hover,
+.format-button:hover,
+.reveal-button:hover,
+.icon-button:hover,
+.edit-button:hover {
+  background-color: var(--primary-color);
+  color: white;
+  transform: translateY(-1px);
 }
 
 /* Utility classes */
@@ -461,6 +553,20 @@ select {
   .action-buttons button {
     width: 100%;
     margin-bottom: 0.5rem;
+  }
+
+  .copy-container {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .button-group {
+    margin-top: 0.5rem;
+    align-self: flex-end;
+  }
+  
+  .copy-text {
+    width: 100%;
   }
 }
 

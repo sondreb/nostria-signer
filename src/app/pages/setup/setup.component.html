@@ -21,12 +21,15 @@
       <div class="mb-3">
         <h3>Nostr Public Key:</h3>
         <div class="copy-container">
-          <span class="copy-text">{{ getDisplayPublicKey(key.publicKey) }}</span>
-          <button class="format-button" (click)="togglePubkeyFormat(key.publicKey)">
-            {{ isHexFormatActive(key.publicKey) ? 'Show npub' : 'Show hex' }}
-          </button>
-          <button class="copy-button" (click)="copyToClipboard(key.publicKey)">Copy</button>
-        
+          <div class="copy-text">{{ getDisplayPublicKey(key.publicKey) }}</div>
+          <div class="button-group">
+            <button class="action-btn" title="Toggle Format" (click)="togglePubkeyFormat(key.publicKey)">
+              {{ isHexFormatActive(key.publicKey) ? 'npub' : 'hex' }}
+            </button>
+            <button class="action-btn" title="Copy to clipboard" (click)="copyToClipboard(key.publicKey)">
+              <span class="action-btn-icon">📋</span> Copy
+            </button>
+          </div>
         </div>
       </div>
 
@@ -34,14 +37,18 @@
         <h3>Nostr Private Key:</h3>
         <div class="copy-container">
           @if (isPrivateKeyVisible(key.publicKey)) {
-          <span class="copy-text">{{ key.privateKey }}</span>
+            <div class="copy-text">{{ key.privateKey }}</div>
           } @else {
-          <span class="copy-text masked-key">••••••••••••••••••••••••••••••••••••••••••••••••••••••••</span>
+            <div class="copy-text masked-key">••••••••••••••••••••••••••••••••••••••••••••••••••••••••</div>
           }
-          <button class="reveal-button" (click)="togglePrivateKeyVisibility(key.publicKey)">
-            {{ isPrivateKeyVisible(key.publicKey) ? 'Hide' : 'Reveal' }}
-          </button>
-          <button class="copy-button" (click)="copyToClipboard(key.privateKey)">Copy</button>
+          <div class="button-group">
+            <button class="action-btn" title="Toggle visibility" (click)="togglePrivateKeyVisibility(key.publicKey)">
+              {{ isPrivateKeyVisible(key.publicKey) ? 'Hide' : 'Show' }}
+            </button>
+            <button class="action-btn" title="Copy to clipboard" (click)="copyToClipboard(key.privateKey)">
+              <span class="action-btn-icon">📋</span> Copy
+            </button>
+          </div>
         </div>
       </div>
 
@@ -53,25 +60,41 @@
           @for (activation of getActivationsForIdentity(key.publicKey); track getActivationId(activation)) {
           <div class="activation-item">
             <div class="activation-details">
-              <div><strong>Client:</strong>
-                <span class="mono-text">{{ activation.clientPubkey === 'pending' ? 'Not yet connected' : activation.clientPubkey }}</span>
+              <div class="client-info">
+                <div class="client-badge" [class.pending-badge]="isPendingActivation(activation)">
+                  {{ isPendingActivation(activation) ? 'Pending Connection' : 'Connected' }}
+                </div>
+                <div class="activation-date">{{ formatDate(activation.activatedDate) }}</div>
               </div>
-              <div><strong>Activated:</strong> {{ formatDate(activation.activatedDate) }}</div>
+              
+              @if (!isPendingActivation(activation)) {
+              <div class="client-pubkey">
+                <span class="key-label">Client:</span>
+                <div class="copy-container">
+                  <div class="copy-text">{{ activation.clientPubkey }}</div>
+                  <button class="action-btn" title="Copy to clipboard" (click)="copyToClipboard(activation.clientPubkey)">
+                    <span class="action-btn-icon">📋</span> Copy
+                  </button>
+                </div>
+              </div>
+              }
               
               <!-- Show Connection URL only for pending activations -->
               @if (isPendingActivation(activation)) {
-              <div class="mb-3">
-                <strong>Connection URL:</strong>
+              <div class="connection-url">
+                <label class="key-label">Connection URL:</label>
                 <div class="copy-container">
-                  <span class="copy-text">{{ getConnectionUrl(activation) }}</span>
-                  <button class="copy-button" (click)="copyToClipboard(getConnectionUrl(activation))">Copy</button>
+                  <div class="copy-text">{{ getConnectionUrl(activation) }}</div>
+                  <button class="action-btn" title="Copy to clipboard" (click)="copyToClipboard(getConnectionUrl(activation))">
+                    <span class="action-btn-icon">📋</span> Copy
+                  </button>
                 </div>
-                <p class="connection-hint">Share this URL with your Nostr client to connect</p>
+                <div class="connection-hint">Share this URL with your Nostr client to connect</div>
               </div>
               }
               
               <div class="permissions-container">
-                <strong>Permissions:</strong>
+                <div class="permissions-label">Permissions</div>
 
                 @if (isEditingPermissions(activation)) {
                 <div class="permissions-edit">
@@ -81,20 +104,23 @@
                     class="permissions-input" 
                     placeholder="E.g., get_public_key,sign_event:0,nip44_encrypt"></textarea>
                   <div class="edit-actions">
-                    <button class="save-button" (click)="savePermissions(activation)">Save</button>
-                    <button class="cancel-button" (click)="cancelEditPermissions(activation)">Cancel</button>
+                    <button class="action-btn" (click)="savePermissions(activation)">Save</button>
+                    <button class="action-btn" (click)="cancelEditPermissions(activation)">Cancel</button>
                   </div>
                 </div>
                 } @else {
                 <div class="permissions-display">
-                  <span class="permissions-text">{{ formatPermissions(activation.permissions) }}</span>
-                  <button class="edit-button" (click)="startEditingPermissions(activation)">Edit</button>
+                  <div class="permissions-text">{{ formatPermissions(activation.permissions) }}</div>
+                  <button class="action-btn" (click)="startEditingPermissions(activation)">Edit</button>
                 </div>
                 }
               </div>
             </div>
+            
             <div class="activation-actions">
-              <button class="delete-button" (click)="deleteActivation(activation)">Revoke</button>
+              <button class="action-btn action-btn-danger" (click)="deleteActivation(activation)">
+                <span>🗑️</span> Revoke
+              </button>
             </div>
           </div>
           }
@@ -125,15 +151,15 @@
       <div class="mb-3">
         <h3>Signer Public Key:</h3>
         <div class="copy-container">
-          <!-- <span class="copy-text">{{ account()?.publicKey }}</span> -->
-          
-          <span class="copy-text">{{ getDisplayPublicKey(account()!.publicKey) }}</span>
-          <button class="format-button" (click)="togglePubkeyFormat(account()!.publicKey)">
-            {{ isHexFormatActive(account()!.publicKey) ? 'Show npub' : 'Show hex' }}
-          </button>
-
-
-          <button class="copy-button" (click)="copyToClipboard(account()?.publicKey || '')">Copy</button>
+          <div class="copy-text">{{ getDisplayPublicKey(account()!.publicKey) }}</div>
+          <div class="button-group">
+            <button class="action-btn" title="Toggle Format" (click)="togglePubkeyFormat(account()!.publicKey)">
+              {{ isHexFormatActive(account()!.publicKey) ? 'npub' : 'hex' }}
+            </button>
+            <button class="action-btn" title="Copy to clipboard" (click)="copyToClipboard(account()?.publicKey || '')">
+              <span class="action-btn-icon">📋</span> Copy
+            </button>
+          </div>
         </div>
       </div>
 
@@ -141,14 +167,18 @@
         <h3>Signer Private Key:</h3>
         <div class="copy-container">
           @if (isPrivateKeyVisible('signer')) {
-          <span class="copy-text">{{ account()?.privateKey }}</span>
+          <div class="copy-text">{{ account()?.privateKey }}</div>
           } @else {
-          <span class="copy-text masked-key">••••••••••••••••••••••••••••••••••••••••••••••••••••••••</span>
+          <div class="copy-text masked-key">••••••••••••••••••••••••••••••••••••••••••••••••••••••••</div>
           }
-          <button class="reveal-button" (click)="togglePrivateKeyVisibility('signer')">
-            {{ isPrivateKeyVisible('signer') ? 'Hide' : 'Reveal' }}
-          </button>
-          <button class="copy-button" (click)="copyToClipboard(account()?.privateKey || '')">Copy</button>
+          <div class="button-group">
+            <button class="action-btn" title="Toggle visibility" (click)="togglePrivateKeyVisibility('signer')">
+              {{ isPrivateKeyVisible('signer') ? 'Hide' : 'Show' }}
+            </button>
+            <button class="action-btn" title="Copy to clipboard" (click)="copyToClipboard(account()?.privateKey || '')">
+              <span class="action-btn-icon">📋</span> Copy
+            </button>
+          </div>
         </div>
       </div>
 
