@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, effect } from '@angular/core';
 import { ClientActivation, NostrAccount, NostrService } from '../../services/nostr.service';
 import { UiService } from '../../services/ui.service';
 import { CommonModule } from '@angular/common';
@@ -43,8 +43,32 @@ export class SetupComponent {
   showQrModal = signal<boolean>(false);
   qrCodeUrl = signal<string>('');
   qrCodeDataUrl = signal<string>('');
+  // New signal to track the currently displayed activation in QR mode
+  currentQrActivation = signal<ClientActivation | null>(null);
 
-  constructor() {}
+  constructor() {
+    // Add an effect to watch for changes in the activation status
+    effect(() => {
+      // Only proceed if we have a QR modal open with an activation
+      if (this.showQrModal() && this.currentQrActivation()) {
+        const activation = this.currentQrActivation();
+        
+        // Check if this activation still exists and is still pending
+        const stillPending = this.nostrService.clientActivations().some(a => 
+          a.clientPubkey === 'pending' && 
+          a.secret === activation?.secret &&
+          a.pubkey === activation?.pubkey
+        );
+        
+        // If it's no longer pending, close the modal
+        if (!stillPending) {
+          this.showQrModal.set(false);
+          this.currentQrActivation.set(null);
+          this.toastService.show('Client connected successfully!', 'success');
+        }
+      }
+    });
+  }
 
   ngOnInit() {
     // Initialize relays signal with values from the service
@@ -298,9 +322,17 @@ export class SetupComponent {
   }
 
   // Toggle QR code modal and generate QR code if opening
-  async toggleQrModal(url?: string): Promise<void> {
+  async toggleQrModal(url?: string, activation?: ClientActivation): Promise<void> {
     if (url && !this.showQrModal()) {
       this.qrCodeUrl.set(url);
+      
+      // Store the current activation if provided
+      if (activation) {
+        this.currentQrActivation.set(activation);
+      } else {
+        this.currentQrActivation.set(null);
+      }
+      
       try {
         // Generate QR code as data URL
         const dataUrl = await QRCode.toDataURL(url, {
@@ -316,6 +348,9 @@ export class SetupComponent {
         console.error('Error generating QR code:', err);
         this.toastService.show('Failed to generate QR code', 'error');
       }
+    } else {
+      // When closing the modal, reset the current activation
+      this.currentQrActivation.set(null);
     }
     
     this.showQrModal.update(current => !current);
@@ -324,6 +359,6 @@ export class SetupComponent {
   // Show QR Code for a specific activation
   async showQrCode(activation: ClientActivation): Promise<void> {
     const url = this.getConnectionUrl(activation);
-    await this.toggleQrModal(url);
+    await this.toggleQrModal(url, activation);
   }
 }
