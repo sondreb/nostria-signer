@@ -784,3 +784,46 @@
     margin-top: 1em;
   }
 }
+
+/* QR Code modal styles */
+.qr-modal {
+  max-width: 400px;
+}
+
+.qr-code-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem;
+  background-color: white;
+  border-radius: var(--radius-md);
+}
+
+.qr-code-image {
+  width: 250px;
+  height: 250px;
+  margin-bottom: 1rem;
+  background-color: white;
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.qr-code-hint {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-top: 1rem;
+  text-align: center;
+}
+
+/* For dark mode, ensure QR code has white background */
+.dark .qr-code-container {
+  background-color: white;
+  color: black;
+}
+
+/* Ensure modals in this component follow the global styles */
+.modal-content {
+  overflow-y: auto;
+  max-height: 90vh;
+}

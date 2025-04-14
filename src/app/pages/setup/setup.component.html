@@ -95,9 +95,14 @@
                 <label class="key-label">Connection URL:</label>
                 <div class="copy-container">
                   <div class="copy-text">{{ getConnectionUrl(activation) }}</div>
-                  <button class="action-btn" title="Copy to clipboard" (click)="copyToClipboard(getConnectionUrl(activation))">
-                    <span class="action-btn-icon">📋</span> Copy
-                  </button>
+                  <div class="button-group">
+                    <button class="action-btn" title="Show QR Code" (click)="showQrCode(activation)">
+                      <span class="action-btn-icon">📱</span> QR
+                    </button>
+                    <button class="action-btn" title="Copy to clipboard" (click)="copyToClipboard(getConnectionUrl(activation))">
+                      <span class="action-btn-icon">📋</span> Copy
+                    </button>
+                  </div>
                 </div>
                 <div class="connection-hint">Share this URL with your Nostr client to connect</div>
               </div>
@@ -254,6 +259,29 @@
     <p>No keys available. Generating...</p>
     <button class="primary" (click)="generateNewKey()">Generate New Client Identity</button>&nbsp;
     <button class="secondary mt-2" (click)="toggleImportModal()">Import Client Identity</button>
+  </div>
+  }
+
+  <!-- QR Code Modal -->
+  @if (showQrModal()) {
+  <div class="modal-overlay">
+    <div class="modal-content qr-modal">
+      <div class="modal-header">
+        <h2>Scan QR Code</h2>
+        <button class="close-button" (click)="toggleQrModal()">×</button>
+      </div>
+      <div class="modal-body qr-code-container">
+        <!-- Display locally generated QR code -->
+        @if (qrCodeDataUrl()) {
+          <img [src]="qrCodeDataUrl()" alt="QR Code" class="qr-code-image">
+        }
+        
+      </div>
+      <p class="qr-code-hint">Scan this code with your Nostr client</p>
+      <div class="modal-footer">
+        <button class="secondary-btn" (click)="toggleQrModal()">Close</button>
+      </div>
+    </div>
   </div>
   }
 

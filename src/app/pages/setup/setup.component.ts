@@ -9,6 +9,7 @@ import { hexToBytes } from '@noble/hashes/utils';
 import { FormsModule } from '@angular/forms';
 import { ThemeSwitcherComponent } from '../../components/theme-switcher/theme-switcher.component';
 import { ToastService } from '../../services/toast.service';
+import QRCode from 'qrcode';
 
 @Component({
   selector: 'app-setup',
@@ -38,6 +39,10 @@ export class SetupComponent {
   // Add a signal to track which keys are displaying in hex format (default is npub)
   showHexFormat = signal<Record<string, boolean>>({});
   theme = this.uiService.theme;
+  // Update QR code related signals
+  showQrModal = signal<boolean>(false);
+  qrCodeUrl = signal<string>('');
+  qrCodeDataUrl = signal<string>('');
 
   constructor() {}
 
@@ -290,5 +295,35 @@ export class SetupComponent {
 
   toggleTheme() {
     this.uiService.toggleTheme();
+  }
+
+  // Toggle QR code modal and generate QR code if opening
+  async toggleQrModal(url?: string): Promise<void> {
+    if (url && !this.showQrModal()) {
+      this.qrCodeUrl.set(url);
+      try {
+        // Generate QR code as data URL
+        const dataUrl = await QRCode.toDataURL(url, {
+          width: 250,
+          margin: 2,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+          }
+        });
+        this.qrCodeDataUrl.set(dataUrl);
+      } catch (err) {
+        console.error('Error generating QR code:', err);
+        this.toastService.show('Failed to generate QR code', 'error');
+      }
+    }
+    
+    this.showQrModal.update(current => !current);
+  }
+
+  // Show QR Code for a specific activation
+  async showQrCode(activation: ClientActivation): Promise<void> {
+    const url = this.getConnectionUrl(activation);
+    await this.toggleQrModal(url);
   }
 }
