@@ -58,7 +58,13 @@
 
       <!-- Activations Section -->
       <div class="mb-3">
-        <h3>Activations</h3>
+        <div class="section-header">
+          <h3>Activations</h3>
+          <button class="generate-activation-button" (click)="generateNewActivation(key.publicKey)">
+            Generate New Activation
+          </button>
+        </div>
+        
         @if (getActivationsForIdentity(key.publicKey).length > 0) {
         <div class="activations-list">
           @for (activation of getActivationsForIdentity(key.publicKey); track getActivationId(activation)) {
@@ -132,17 +138,10 @@
         } @else {
         <p class="text-center">No activations for this identity.</p>
         }
-        
-        <!-- New activation button -->
-        <div class="text-center mt-3">
-          <button class="generate-activation-button" (click)="generateNewActivation(key.publicKey)">
-            Generate New Activation
-          </button>
-        </div>
       </div>
 
-      <div class="text-right">
-        <button class="danger" (click)="deleteKey(key.publicKey)">Delete</button>
+      <div class="key-actions">
+        <button class="danger" (click)="deleteKey(key.publicKey)">Delete Identity</button>
       </div>
       <hr class="key-divider">
     </div>
