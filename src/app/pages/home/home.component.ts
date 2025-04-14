@@ -4,11 +4,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { UiService } from '../../services/ui.service';
+import { ThemeSwitcherComponent } from '../../components/theme-switcher/theme-switcher.component';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ThemeSwitcherComponent],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.css']
 })

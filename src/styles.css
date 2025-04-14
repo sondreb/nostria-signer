@@ -38,6 +38,14 @@
   /* Transitions */
   --transition-fast: 0.15s ease-in-out;
   --transition-normal: 0.3s ease-in-out;
+
+  /* Additional theme variables */
+  --copy-bg: #f1f5f9;
+  --input-bg: #ffffff;
+  --feature-card-bg: #f8fafc;
+  --info-box-bg: #f1f5f9;
+  --warning-bg: var(--warning-light);
+  --modal-overlay: rgba(15, 23, 42, 0.7);
 }
 
 /* Add dark mode transitions and styles */
@@ -56,6 +64,21 @@ body {
   --secondary-color: #fb923c;
   --secondary-hover: #f97316;
   --secondary-light: rgba(251, 146, 60, 0.2);
+  
+  /* Dark mode specific overrides */
+  --background-color: #0f172a;
+  --card-bg: #1e293b;
+  --text-color: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --border-color: #334155;
+  
+  /* Update other elements for dark mode */
+  --copy-bg: #334155;
+  --input-bg: #1e293b;
+  --feature-card-bg: #1e293b;
+  --info-box-bg: #1e293b;
+  --warning-bg: #451a03;
+  --modal-overlay: rgba(0, 0, 0, 0.75);
 }
 
 * {
@@ -159,6 +182,11 @@ button.secondary:hover {
   box-shadow: var(--shadow-sm);
 }
 
+.dark-theme .secondary-btn {
+  background-color: transparent;
+  color: var(--primary-color);
+}
+
 .input-group {
   margin-bottom: 1.5rem;
 }
@@ -170,10 +198,18 @@ button.secondary:hover {
   color: var(--text-color);
 }
 
-.input-group input {
+.input-group input,
+.form-control,
+input[type="text"],
+input[type="password"],
+input[type="email"],
+textarea,
+select {
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   font-size: 1rem;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
@@ -188,7 +224,7 @@ button.secondary:hover {
 .copy-container {
   display: flex;
   align-items: center;
-  background-color: #f1f5f9;
+  background-color: var(--copy-bg);
   border-radius: var(--radius-md);
   padding: 0.75rem;
   margin: 1rem 0;
@@ -425,4 +461,29 @@ button.secondary:hover {
     width: 100%;
     margin-bottom: 0.5rem;
   }
+}
+
+/* Fix modal content in dark mode */
+.modal-content {
+  background-color: var(--card-bg);
+  color: var(--text-color);
+}
+
+.modal-overlay {
+  background-color: var(--modal-overlay);
+}
+
+/* Update feature cards for theme support */
+.feature-card {
+  background-color: var(--feature-card-bg);
+  border: 1px solid var(--border-color);
+}
+
+/* Update info boxes for theme support */
+.info-box {
+  background-color: var(--info-box-bg);
+}
+
+.warning-message {
+  background-color: var(--warning-bg);
 }

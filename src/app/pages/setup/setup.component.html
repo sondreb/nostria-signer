@@ -258,7 +258,5 @@
   }
 
   <!-- Add this at the end of the file, right before the closing </div> -->
-  <div class="theme-toggle" (click)="toggleTheme()">
-    <span class="theme-icon">{{ theme() === 'dark' ? '🌞' : '🌙' }}</span>
-  </div>
+  <app-theme-switcher></app-theme-switcher>
 </div>

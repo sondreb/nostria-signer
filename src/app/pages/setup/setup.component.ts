@@ -7,11 +7,12 @@ import { BunkerSigner, parseBunkerInput } from 'nostr-tools/nip46';
 import { v2 } from 'nostr-tools/nip44';
 import { hexToBytes } from '@noble/hashes/utils';
 import { FormsModule } from '@angular/forms';
+import { ThemeSwitcherComponent } from '../../components/theme-switcher/theme-switcher.component';
 
 @Component({
   selector: 'app-setup',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ThemeSwitcherComponent],
   templateUrl: './setup.component.html',
   styleUrls: ['./setup.component.css']
 })

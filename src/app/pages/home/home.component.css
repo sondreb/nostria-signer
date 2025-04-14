@@ -71,7 +71,7 @@
   max-width: 500px;
   margin: 2rem auto 0;
   padding: 2rem;
-  background-color: #f8fafc;
+  background-color: var(--info-box-bg);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-color);
@@ -87,6 +87,8 @@
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   font-size: 1rem;
+  background-color: var(--input-bg);
+  color: var(--text-color);
   transition: all var(--transition-fast);
 }
 
@@ -121,7 +123,7 @@
 }
 
 .info-box {
-  background-color: #f1f5f9;
+  background-color: var(--info-box-bg);
   border-left: 4px solid var(--primary-color);
   padding: 1.5rem;
   border-radius: var(--radius-md);
@@ -155,12 +157,12 @@
 }
 
 .warning-message {
-  background-color: var(--warning-light);
+  background-color: var(--warning-bg);
   border-left: 4px solid var(--warning-color);
   padding: 1rem;
   border-radius: var(--radius-md);
   text-align: left;
-  color: #7c2d12;
+  color: var(--text-color);
   position: relative;
   margin-bottom: 1.5rem;
 }
@@ -194,7 +196,7 @@
 
 .feature-card {
   flex: 1;
-  background-color: #f8fafc;
+  background-color: var(--feature-card-bg);
   padding: 1.5rem;
   border-radius: var(--radius-md);
   text-align: center;
