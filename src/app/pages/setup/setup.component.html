@@ -250,10 +250,15 @@
         }
       </div>
       <div class="modal-footer">
-        <button class="secondary" (click)="toggleImportModal()">Cancel</button>
-        <button class="primary" (click)="importKey()" [disabled]="!importKeyValue()">Import</button>
+        <button class="secondary-btn" (click)="toggleImportModal()">Cancel</button>
+        <button class="primary-btn" (click)="importKey()" [disabled]="!importKeyValue()">Import</button>
       </div>
     </div>
   </div>
   }
+
+  <!-- Add this at the end of the file, right before the closing </div> -->
+  <div class="theme-toggle" (click)="toggleTheme()">
+    <span class="theme-icon">{{ theme() === 'dark' ? '🌞' : '🌙' }}</span>
+  </div>
 </div>

@@ -3,6 +3,7 @@ import { NostrService } from '../../services/nostr.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { UiService } from '../../services/ui.service';
 
 @Component({
   selector: 'app-home',
@@ -14,11 +15,13 @@ import { Router } from '@angular/router';
 export class HomeComponent {
   private nostrService = inject(NostrService);
   private router = inject(Router);
+  private uiService = inject(UiService);
   
   showImport = signal<boolean>(false);
   importedKey = signal<string>('');
   importError = signal<string | null>(null);
   loading = signal<boolean>(true);
+  theme = this.uiService.theme;
   
   constructor() {
     // Check if account exists and redirect if necessary
@@ -60,5 +63,9 @@ export class HomeComponent {
     if (!success) {
       this.importError.set('Invalid private key format. Please check and try again.');
     }
+  }
+  
+  toggleTheme(): void {
+    this.uiService.toggleTheme();
   }
 }

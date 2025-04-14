@@ -2,52 +2,59 @@
   @if (loading()) {
     <div class="text-center">
       <div class="spinner"></div>
-      <p>Loading...</p>
+      <p>Loading your signer...</p>
     </div>
   } @else {
-    <div class="card">
-      <div class="text-center">
-        <img src="icons/icon-384x384.png" alt="Nostria Signer Logo" class="app-logo">
+    <div class="welcome-card card">
+      <div class="bg-pattern"></div>
+      <div class="content">
+        <img src="assets/logo.svg" onerror="this.src='icons/icon-384x384.png'" alt="Nostria Signer Logo" class="app-logo">
         
-        <h1>Welcome to Nostria Signer</h1>
-        <p class="mb-4">
-          Your secure and easy-to-use Nostr identity manager for remote signing with the Nostr Connect protocol (NIP-46).
+        <h1 class="welcome-title">Welcome to Nostria Signer</h1>
+        <p class="subtitle">
+          Your secure and easy-to-use Nostr identity manager for remote signing with the 
+          Nostr Connect protocol (NIP-46).
         </p>
         
-        <div class="info-box mb-4">
-          <h3>Important: About Signer Identity</h3>
-          <p>
-            The key you create or import here is your <strong>Signer Identity</strong>, which is 
-            separate from your regular Nostr identity.
-          </p>
-          <p>
-            This Signer Identity will manage your Nostr accounts securely without exposing them.
-            <strong>Do not</strong> import your regular Nostr private keys on this screen, first generate or import signer key, then you can manage client identities.
-          </p>
-        </div>
-        
         @if (!showImport()) {
-          <p>
-            Create a new Signer Identity or import an existing Signer key.
-          </p>
+          <div class="info-box">
+            <h3>About Signer Identity</h3>
+            <p>
+              The key you create or import here is your <strong>Signer Identity</strong>, which is 
+              separate from your regular Nostr identity.
+            </p>
+            <p>
+              This Signer Identity will manage your Nostr accounts securely without exposing them.
+              <strong>Do not</strong> import your regular Nostr private keys on this screen.
+            </p>
+          </div>
           
           <div class="action-buttons">
-            <button (click)="onGetStarted()" class="mt-4 primary-btn">Generate New Signer Key</button>
-            <button (click)="toggleImportView()" class="mt-4 secondary-btn">Import Existing Signer Key</button>
+            <button (click)="onGetStarted()" class="primary-btn">
+              <span class="btn-icon">✨</span>
+              Generate New Signer Key
+            </button>
+            <button (click)="toggleImportView()" class="secondary-btn">
+              <span class="btn-icon">🔑</span>
+              Import Existing Signer Key
+            </button>
           </div>
         } @else {
           <div class="import-form">
             <h2>Import Existing Signer Key</h2>
             <p>Enter your Signer private key (nsec or hex format)</p>
             
-            <div class="warning-message mb-3">
+            <div class="warning-message">
               <strong>Warning:</strong> This should be your dedicated Nostria Signer key, 
               not your regular Nostr identity. Importing your main Nostr identity here is not 
               recommended.
             </div>
             
             @if (importError()) {
-              <div class="error-message">{{ importError() }}</div>
+              <div class="error-message">
+                <span class="error-icon">⚠️</span>
+                {{ importError() }}
+              </div>
             }
             
             <div class="form-group">
@@ -66,12 +73,97 @@
             </div>
             
             <div class="action-buttons">
-              <button (click)="onImportKey()" class="mt-3 primary-btn">Import</button>
-              <button (click)="toggleImportView()" class="mt-3 secondary-btn">Cancel</button>
+              <button (click)="onImportKey()" class="primary-btn">
+                <span class="btn-icon">✓</span>
+                Import
+              </button>
+              <button (click)="toggleImportView()" class="secondary-btn">
+                <span class="btn-icon">✕</span>
+                Cancel
+              </button>
             </div>
           </div>
         }
+        
+        <div class="features mt-4">
+          <div class="feature-row">
+            <div class="feature-card">
+              <span class="feature-icon">🔒</span>
+              <h3>Secure</h3>
+              <p>Your private keys never leave your device</p>
+            </div>
+            <div class="feature-card">
+              <span class="feature-icon">🌐</span>
+              <h3>Connected</h3>
+              <p>Works with many Nostr clients</p>
+            </div>
+            <div class="feature-card">
+              <span class="feature-icon">🔄</span>
+              <h3>Flexible</h3>
+              <p>Manage multiple identities</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   }
+  <div class="theme-toggle" (click)="toggleTheme()">
+    <span class="theme-icon">{{ theme() === 'dark' ? '🌞' : '🌙' }}</span>
+  </div>
 </div>
+
+<style>
+  .btn-icon {
+    display: inline-block;
+    margin-right: 6px;
+  }
+  
+  .feature-row {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 3rem;
+  }
+  
+  .feature-card {
+    flex: 1;
+    background-color: #f8fafc;
+    padding: 1.5rem;
+    border-radius: var(--radius-md);
+    text-align: center;
+    border: 1px solid var(--border-color);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-md);
+  }
+  
+  .feature-icon {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    display: block;
+  }
+  
+  .feature-card h3 {
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+  }
+  
+  .feature-card p {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+  }
+  
+  .error-icon {
+    display: inline-block;
+    margin-right: 8px;
+  }
+  
+  @media (max-width: 768px) {
+    .feature-row {
+      flex-direction: column;
+      gap: 1rem;
+    }
+  }
+</style>

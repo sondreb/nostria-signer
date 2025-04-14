@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { ClientActivation, NostrAccount, NostrService } from '../../services/nostr.service';
+import { UiService } from '../../services/ui.service';
 import { CommonModule } from '@angular/common';
 import { kinds, nip44, SimplePool } from 'nostr-tools';
 import { BunkerSigner, parseBunkerInput } from 'nostr-tools/nip46';
@@ -16,6 +17,7 @@ import { FormsModule } from '@angular/forms';
 })
 export class SetupComponent {
   private nostrService = inject(NostrService);
+  private uiService = inject(UiService);
 
   keys = this.nostrService.keys;
   account = this.nostrService.account;
@@ -32,6 +34,7 @@ export class SetupComponent {
   importSuccess = signal<boolean>(false);
   // Add a signal to track which keys are displaying in hex format (default is npub)
   showHexFormat = signal<Record<string, boolean>>({});
+  theme = this.uiService.theme;
 
   constructor() {}
 
@@ -271,5 +274,9 @@ export class SetupComponent {
 
   formatDate(dateString: string): string {
     return new Date(dateString).toLocaleString();
+  }
+
+  toggleTheme() {
+    this.uiService.toggleTheme();
   }
 }
