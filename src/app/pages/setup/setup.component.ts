@@ -8,6 +8,7 @@ import { v2 } from 'nostr-tools/nip44';
 import { hexToBytes } from '@noble/hashes/utils';
 import { FormsModule } from '@angular/forms';
 import { ThemeSwitcherComponent } from '../../components/theme-switcher/theme-switcher.component';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-setup',
@@ -19,6 +20,7 @@ import { ThemeSwitcherComponent } from '../../components/theme-switcher/theme-sw
 export class SetupComponent {
   private nostrService = inject(NostrService);
   private uiService = inject(UiService);
+  private toastService = inject(ToastService);
 
   keys = this.nostrService.keys;
   account = this.nostrService.account;
@@ -104,10 +106,11 @@ export class SetupComponent {
   copyToClipboard(text: string) {
     navigator.clipboard.writeText(text)
       .then(() => {
-        alert('Copied to clipboard!');
+        this.toastService.show('Copied to clipboard!', 'success');
       })
       .catch(err => {
         console.error('Failed to copy: ', err);
+        this.toastService.show('Failed to copy text', 'error');
       });
   }
 
@@ -144,17 +147,20 @@ export class SetupComponent {
   resetAllKeys() {
     if (confirm('Are you sure you want to reset all keys? This action cannot be undone.')) {
       this.nostrService.reset();
+      this.toastService.show('All keys have been reset', 'info');
     }
   }
 
   deleteKey(publicKey: string) {
     if (confirm('Are you sure you want to delete this key? This action cannot be undone.')) {
       this.nostrService.deleteKey(publicKey);
+      this.toastService.show('Key deleted successfully', 'success');
     }
   }
 
   generateNewKey() {
     this.nostrService.generateAccount();
+    this.toastService.show('New client identity generated', 'success');
   }
 
   togglePrivateKeyVisibility(publicKey: string): void {
@@ -178,12 +184,14 @@ export class SetupComponent {
       this.updateRelays();
       // Reset input
       this.newRelay.set('');
+      this.toastService.show(`Added relay: ${relay}`, 'success');
     }
   }
 
   removeRelay(relay: string) {
     this.relays.update(current => current.filter(r => r !== relay));
     this.updateRelays();
+    this.toastService.show(`Removed relay: ${relay}`, 'info');
   }
 
   updateRelays() {
@@ -210,6 +218,7 @@ export class SetupComponent {
         activation.pubkey, 
         activation.secret!
       );
+      this.toastService.show('Activation revoked successfully', 'success');
     }
   }
 
@@ -249,6 +258,8 @@ export class SetupComponent {
     const currentEditing = { ...this.editingPermissions() };
     currentEditing[activationId] = false;
     this.editingPermissions.set(currentEditing);
+    
+    this.toastService.show('Permissions updated successfully', 'success');
   }
 
   cancelEditPermissions(activation: ClientActivation) {

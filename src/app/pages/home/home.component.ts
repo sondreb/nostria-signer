@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { UiService } from '../../services/ui.service';
 import { ThemeSwitcherComponent } from '../../components/theme-switcher/theme-switcher.component';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-home',
@@ -17,6 +18,7 @@ export class HomeComponent {
   private nostrService = inject(NostrService);
   private router = inject(Router);
   private uiService = inject(UiService);
+  private toastService = inject(ToastService);
   
   showImport = signal<boolean>(false);
   importedKey = signal<string>('');
@@ -44,6 +46,7 @@ export class HomeComponent {
   
   async onGetStarted(): Promise<void> {
     await this.nostrService.generateSignerAccount();
+    this.toastService.show('Signer account generated successfully', 'success');
   }
   
   toggleImportView(): void {
@@ -63,6 +66,8 @@ export class HomeComponent {
     
     if (!success) {
       this.importError.set('Invalid private key format. Please check and try again.');
+    } else {
+      this.toastService.show('Signer key imported successfully', 'success');
     }
   }
   

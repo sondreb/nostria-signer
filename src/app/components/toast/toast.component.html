@@ -1,0 +1,12 @@
+<div class="toast-container">
+  @for (toast of toastService.toasts(); track toast.id) {
+    <div 
+      class="toast-item" 
+      [class]="'toast-' + toast.type"
+      [@toastAnimation]="'visible'"
+      (click)="removeToast(toast.id)">
+      <div class="toast-icon">{{ getIconForType(toast.type) }}</div>
+      <div class="toast-content">{{ toast.message }}</div>
+    </div>
+  }
+</div>
