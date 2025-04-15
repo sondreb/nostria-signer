@@ -1,5 +1,7 @@
 # Nostria
 
+WARNING: THIS IS STILL PROTOTYPE! DO NOT USE ANY REAL NOSTR KEYS!!!
+
 <img src="public/icons/icon-128x128.png" alt="Nostria Logo" width="128" height="128">
 
 Nostria Signer is a Desktop app that allows you to sign and verify messages using your Nostr keys.
