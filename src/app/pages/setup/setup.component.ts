@@ -9,6 +9,7 @@ import { hexToBytes } from '@noble/hashes/utils';
 import { FormsModule } from '@angular/forms';
 import { ThemeSwitcherComponent } from '../../components/theme-switcher/theme-switcher.component';
 import { ToastService } from '../../services/toast.service';
+import { LogService, LogType } from '../../services/log.service';
 import QRCode from 'qrcode';
 
 @Component({
@@ -22,12 +23,13 @@ export class SetupComponent {
   private nostrService = inject(NostrService);
   private uiService = inject(UiService);
   private toastService = inject(ToastService);
+  private logService = inject(LogService);
 
   keys = this.nostrService.keys;
   account = this.nostrService.account;
   clientActivations = this.nostrService.clientActivations;
   showPrivateKeys = signal<Record<string, boolean>>({});
-  activeTab = signal<'clients' | 'signer' | 'relays'>('clients');
+  activeTab = signal<'clients' | 'signer' | 'relays' | 'log'>('clients');
   relays = signal<string[]>([]);
   newRelay = signal<string>('');
   editingPermissions = signal<Record<string, boolean>>({});
@@ -36,48 +38,40 @@ export class SetupComponent {
   importKeyValue = signal<string>('');
   importError = signal<string | null>(null);
   importSuccess = signal<boolean>(false);
-  // Add a signal to track which keys are displaying in hex format (default is npub)
   showHexFormat = signal<Record<string, boolean>>({});
   theme = this.uiService.theme;
-  // Update QR code related signals
   showQrModal = signal<boolean>(false);
   qrCodeUrl = signal<string>('');
   qrCodeDataUrl = signal<string>('');
-  // New signal to track the currently displayed activation in QR mode
   currentQrActivation = signal<ClientActivation | null>(null);
+  logFilter = signal<LogType | string | undefined>(undefined);
+  logPubkeyFilter = signal<string | undefined>(undefined);
 
   constructor() {
-    // Add an effect to watch for changes in the activation status
     effect(() => {
-      // Only proceed if we have a QR modal open with an activation
       if (this.showQrModal() && this.currentQrActivation()) {
         const activation = this.currentQrActivation();
-        
-        // Check if this activation still exists and is still pending
         const stillPending = this.nostrService.clientActivations().some(a => 
           a.clientPubkey === 'pending' && 
           a.secret === activation?.secret &&
           a.pubkey === activation?.pubkey
         );
-        
-        // If it's no longer pending, close the modal
         if (!stillPending) {
           this.showQrModal.set(false);
           this.currentQrActivation.set(null);
           this.toastService.show('Client connected successfully!', 'success');
+          this.logService.addEntry(LogType.CONNECTION, 'Client connected successfully');
         }
       }
     });
   }
 
   ngOnInit() {
-    // Initialize relays signal with values from the service
     this.relays.set([...this.nostrService.relays]);
   }
 
   toggleImportModal(): void {
     this.showImportModal.update(current => !current);
-    // Reset form when toggling
     if (this.showImportModal()) {
       this.importKeyValue.set('');
       this.importError.set(null);
@@ -88,18 +82,16 @@ export class SetupComponent {
   async importKey(): Promise<void> {
     this.importError.set(null);
     this.importSuccess.set(false);
-    
     const keyValue = this.importKeyValue().trim();
     if (!keyValue) {
       this.importError.set('Please enter a private key in nsec or hex format.');
       return;
     }
-
     try {
       const success = await this.nostrService.importAccount(keyValue);
       if (success) {
         this.importSuccess.set(true);
-        // Close the modal after a short delay
+        this.logService.addEntry(LogType.CONNECTION, 'Client identity imported successfully');
         setTimeout(() => {
           this.showImportModal.set(false);
         }, 1500);
@@ -109,10 +101,11 @@ export class SetupComponent {
     } catch (error) {
       console.error('Error importing key:', error);
       this.importError.set('An unexpected error occurred. Please try again.');
+      this.logService.addEntry(LogType.ERROR, 'Failed to import key', error);
     }
   }
 
-  setActiveTab(tab: 'clients' | 'signer' | 'relays') {
+  setActiveTab(tab: 'clients' | 'signer' | 'relays' | 'log') {
     this.activeTab.set(tab);
   }
 
@@ -130,6 +123,7 @@ export class SetupComponent {
 
   generateNewActivation(publicKey: string): void {
     this.nostrService.generateNewActivation(publicKey);
+    this.logService.addEntry(LogType.CONNECTION, 'New activation generated for client', null, publicKey);
   }
 
   copyToClipboard(text: string) {
@@ -140,10 +134,10 @@ export class SetupComponent {
       .catch(err => {
         console.error('Failed to copy: ', err);
         this.toastService.show('Failed to copy text', 'error');
+        this.logService.addEntry(LogType.ERROR, 'Failed to copy to clipboard', err);
       });
   }
 
-  // Add method to toggle between npub and hex format
   togglePubkeyFormat(publicKey: string): void {
     this.showHexFormat.update(formats => {
       const currentFormats = { ...formats };
@@ -152,22 +146,17 @@ export class SetupComponent {
     });
   }
 
-  // Method to check if hex format is active for a specific key
   isHexFormatActive(publicKey: string): boolean {
     return !!this.showHexFormat()[publicKey];
   }
 
-  // Method to get the display format of the public key
   getDisplayPublicKey(publicKey: string): string {
     if (this.isHexFormatActive(publicKey)) {
-      // If hex format is active, show the raw hex (could be from npub or directly a hex key)
       return this.nostrService.convertToHexIfNeeded(publicKey);
     }
-    // Otherwise show the npub format
     return this.nostrService.convertToNpubIfNeeded(publicKey);
   }
 
-  // Keep this method as a fallback for any remaining code that might use it
   copyConnectionUrl(account: NostrAccount) {
     const connectionUrl = this.nostrService.getConnectionUrlForAccount(account);
     this.copyToClipboard(connectionUrl);
@@ -177,6 +166,7 @@ export class SetupComponent {
     if (confirm('Are you sure you want to reset all keys? This action cannot be undone.')) {
       this.nostrService.reset();
       this.toastService.show('All keys have been reset', 'info');
+      this.logService.addEntry(LogType.CONNECTION, 'All keys have been reset');
     }
   }
 
@@ -184,12 +174,14 @@ export class SetupComponent {
     if (confirm('Are you sure you want to delete this key? This action cannot be undone.')) {
       this.nostrService.deleteKey(publicKey);
       this.toastService.show('Key deleted successfully', 'success');
+      this.logService.addEntry(LogType.CONNECTION, 'Key deleted', { publicKey });
     }
   }
 
   generateNewKey() {
     this.nostrService.generateAccount();
     this.toastService.show('New client identity generated', 'success');
+    this.logService.addEntry(LogType.CONNECTION, 'New client identity generated');
   }
 
   togglePrivateKeyVisibility(publicKey: string): void {
@@ -207,13 +199,11 @@ export class SetupComponent {
   addRelay() {
     const relay = this.newRelay().trim();
     if (relay && !this.relays().includes(relay)) {
-      // Add new relay
       this.relays.update(current => [...current, relay]);
-      // Update service
       this.updateRelays();
-      // Reset input
       this.newRelay.set('');
       this.toastService.show(`Added relay: ${relay}`, 'success');
+      this.logService.addEntry(LogType.CONNECTION, `Added relay: ${relay}`);
     }
   }
 
@@ -221,6 +211,7 @@ export class SetupComponent {
     this.relays.update(current => current.filter(r => r !== relay));
     this.updateRelays();
     this.toastService.show(`Removed relay: ${relay}`, 'info');
+    this.logService.addEntry(LogType.CONNECTION, `Removed relay: ${relay}`);
   }
 
   updateRelays() {
@@ -229,7 +220,6 @@ export class SetupComponent {
 
   isValidUrl(url: string): boolean {
     try {
-      // Simple validation - checks if it's a valid WebSocket URL
       return url.trim().startsWith('wss://') || url.trim().startsWith('ws://');
     } catch {
       return false;
@@ -248,6 +238,7 @@ export class SetupComponent {
         activation.secret!
       );
       this.toastService.show('Activation revoked successfully', 'success');
+      this.logService.addEntry(LogType.CONNECTION, 'Activation revoked', { activation });
     }
   }
 
@@ -260,13 +251,9 @@ export class SetupComponent {
 
   startEditingPermissions(activation: ClientActivation) {
     const activationId = this.getActivationId(activation);
-    
-    // Update permissions input first
     const currentPermissions = { ...this.permissionsInput() };
     currentPermissions[activationId] = activation.permissions;
     this.permissionsInput.set(currentPermissions);
-    
-    // Then update editing state
     const currentEditing = { ...this.editingPermissions() };
     currentEditing[activationId] = true;
     this.editingPermissions.set(currentEditing);
@@ -275,26 +262,24 @@ export class SetupComponent {
   savePermissions(activation: ClientActivation) {
     const activationId = this.getActivationId(activation);
     const newPermissions = this.permissionsInput()[activationId] || '';
-    
     this.nostrService.updateActivationPermissions(
       activation.clientPubkey,
       activation.pubkey,
       activation.secret!,
       newPermissions
     );
-    
-    // Update editing state
     const currentEditing = { ...this.editingPermissions() };
     currentEditing[activationId] = false;
     this.editingPermissions.set(currentEditing);
-    
     this.toastService.show('Permissions updated successfully', 'success');
+    this.logService.addEntry(LogType.CONNECTION, 'Permissions updated', { 
+      activation, 
+      newPermissions 
+    });
   }
 
   cancelEditPermissions(activation: ClientActivation) {
     const activationId = this.getActivationId(activation);
-    
-    // Update editing state
     const currentEditing = { ...this.editingPermissions() };
     currentEditing[activationId] = false;
     this.editingPermissions.set(currentEditing);
@@ -321,20 +306,15 @@ export class SetupComponent {
     this.uiService.toggleTheme();
   }
 
-  // Toggle QR code modal and generate QR code if opening
   async toggleQrModal(url?: string, activation?: ClientActivation): Promise<void> {
     if (url && !this.showQrModal()) {
       this.qrCodeUrl.set(url);
-      
-      // Store the current activation if provided
       if (activation) {
         this.currentQrActivation.set(activation);
       } else {
         this.currentQrActivation.set(null);
       }
-      
       try {
-        // Generate QR code as data URL
         const dataUrl = await QRCode.toDataURL(url, {
           width: 250,
           margin: 2,
@@ -347,18 +327,60 @@ export class SetupComponent {
       } catch (err) {
         console.error('Error generating QR code:', err);
         this.toastService.show('Failed to generate QR code', 'error');
+        this.logService.addEntry(LogType.ERROR, 'Failed to generate QR code', err);
       }
     } else {
-      // When closing the modal, reset the current activation
       this.currentQrActivation.set(null);
     }
-    
     this.showQrModal.update(current => !current);
   }
 
-  // Show QR Code for a specific activation
   async showQrCode(activation: ClientActivation): Promise<void> {
     const url = this.getConnectionUrl(activation);
     await this.toggleQrModal(url, activation);
+  }
+
+  getFilteredLogs() {
+    return this.logService.getFilteredLogs(this.logFilter(), this.logPubkeyFilter());
+  }
+
+  setLogFilter(type: LogType | string | undefined) {
+    this.logFilter.set(type);
+  }
+
+  setLogPubkeyFilter(pubkey?: string) {
+    this.logPubkeyFilter.set(pubkey);
+  }
+
+  clearLogs() {
+    if (confirm('Are you sure you want to clear all logs?')) {
+      this.logService.clearLogs();
+      this.toastService.show('Logs cleared', 'info');
+    }
+  }
+
+  getLogTypeIcon(type: LogType): string {
+    switch (type) {
+      case LogType.EVENT_RECEIVED: return '📥';
+      case LogType.SIGN_REQUEST: return '✍️';
+      case LogType.ENCRYPTION: return '🔒';
+      case LogType.CONNECTION: return '🔗';
+      case LogType.ERROR: return '⚠️';
+      default: return '📋';
+    }
+  }
+
+  formatLogDetails(details: any): string {
+    if (!details) return '';
+    try {
+      return JSON.stringify(details, null, 2);
+    } catch (e) {
+      return String(details);
+    }
+  }
+
+  resetLogFilters() {
+    this.logFilter.set(undefined);
+    this.logPubkeyFilter.set(undefined);
   }
 }

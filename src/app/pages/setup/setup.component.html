@@ -17,6 +17,9 @@
       <button class="tab" [class.active]="activeTab() === 'relays'" (click)="setActiveTab('relays')">
         Relays
       </button>
+      <button class="tab" [class.active]="activeTab() === 'log'" (click)="setActiveTab('log')">
+        Log
+      </button>
     </div>
 
     @if (activeTab() === 'clients') {
@@ -232,6 +235,67 @@
           <strong>Note:</strong> Relays should start with "wss://" for secure WebSocket connections.
           Changes to relays will affect all your connections.
         </p>
+      </div>
+    </div>
+    }
+
+    <!-- New Log Tab -->
+    @if (activeTab() === 'log') {
+    <div class="key-card">
+      <div class="log-header">
+        <h3>Activity Log</h3>
+        <div class="log-actions">
+          <button class="action-btn" (click)="clearLogs()">Clear Log</button>
+          <button class="action-btn" (click)="resetLogFilters()">Reset Filters</button>
+        </div>
+      </div>
+      
+      <div class="log-filters">
+        <div class="filter-group">
+          <label>Filter by type:</label>
+          <div class="filter-options">
+            <button class="filter-btn" [class.active]="logFilter() === undefined" (click)="setLogFilter(undefined)">All</button>
+            <button class="filter-btn" [class.active]="logFilter() === 'event-received'" (click)="setLogFilter('event-received')">Events</button>
+            <button class="filter-btn" [class.active]="logFilter() === 'sign-request'" (click)="setLogFilter('sign-request')">Signing</button>
+            <button class="filter-btn" [class.active]="logFilter() === 'encryption'" (click)="setLogFilter('encryption')">Encryption</button>
+            <button class="filter-btn" [class.active]="logFilter() === 'connection'" (click)="setLogFilter('connection')">Connection</button>
+            <button class="filter-btn" [class.active]="logFilter() === 'error'" (click)="setLogFilter('error')">Errors</button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="log-container">
+        @if (getFilteredLogs().length === 0) {
+        <div class="empty-log">
+          <p>No log entries found</p>
+        </div>
+        } @else {
+        <div class="log-entries">
+          @for (entry of getFilteredLogs(); track entry.id) {
+          <div class="log-entry" [class]="'log-type-' + entry.type">
+            <div class="log-icon" [title]="entry.type">{{ getLogTypeIcon(entry.type) }}</div>
+            <div class="log-content">
+              <div class="log-timestamp">{{ formatDate(entry.timestamp.toString()) }}</div>
+              <div class="log-message">{{ entry.message }}</div>
+              @if (entry.pubkey) {
+              <div class="log-pubkey">
+                <span class="pubkey-label">Pubkey:</span>
+                <span class="pubkey-value" (click)="setLogPubkeyFilter(entry.pubkey)" title="Filter by this pubkey">
+                  {{ entry.pubkey }}
+                </span>
+              </div>
+              }
+              @if (entry.details) {
+              <details class="log-details">
+                <summary>Details</summary>
+                <pre>{{ formatLogDetails(entry.details) }}</pre>
+              </details>
+              }
+            </div>
+          </div>
+          }
+        </div>
+        }
       </div>
     </div>
     }

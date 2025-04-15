@@ -6,6 +6,8 @@ import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
 import { BunkerSigner, parseBunkerInput } from 'nostr-tools/nip46';
 import { kinds, nip19, SimplePool } from 'nostr-tools';
 import { v2 } from 'nostr-tools/nip44';
+import { LogService, LogType } from './log.service';
+import { decrypt, encrypt } from 'nostr-tools/nip04';
 
 // Constants for localStorage keys
 export const STORAGE_KEYS = {
@@ -28,6 +30,7 @@ export interface ClientActivation {
   secret?: string;       // UUID used for activation, removed after activation
   permissions: string;   // Comma separated list of permissions
   clientId?: string;     // ID of the client connection
+  nip4?: boolean;         // Indicates if NIP-4 or NIP-44 is used.
 }
 
 @Injectable({
@@ -50,7 +53,9 @@ export class NostrService {
 
   private accountExists = signal<boolean>(false);
 
-  constructor() {
+  constructor(
+    private logService: LogService
+  ) {
     // Load the signer key
     this.loadSignerKey();
 
@@ -181,18 +186,21 @@ export class NostrService {
   }
 
   // Update client activation when connection is established
-  updateClientActivationOnConnect(activationIndex: number, clientPubkey: string, clientId: string): void {
+  updateClientActivationOnConnect(activationIndex: number, clientPubkey: string, clientId: string, nip4: boolean) {
     this.clientActivations.update(activations => {
       const updated = [...activations];
       updated[activationIndex] = {
         ...updated[activationIndex],
         clientPubkey,     // Set the real client pubkey
         clientId,         // Save the client ID
-        secret: undefined // Remove the secret as it's been used
+        secret: undefined, // Remove the secret as it's been used
+        nip4: nip4
       };
       return updated;
     });
     this.saveClientActivations();
+
+    return this.clientActivations()[activationIndex];
   }
 
   // Update client activation permissions
@@ -301,10 +309,28 @@ export class NostrService {
     const privateKey = hexToBytes(privateKeyHex!);
 
     try {
-      // The content of evt is a NIP-44 encrypted event, decrypt it:
-      const convKey = v2.utils.getConversationKey(privateKey, evt.pubkey);
-      const decrypted = v2.decrypt(evt.content, convKey);
-      console.log('Decrypted content:', decrypted);
+      let decrypted = undefined;
+      let nip4 = false;
+
+      debugger;
+
+      if (evt.content.indexOf('iv=') === -1) {
+        // The content of evt is a NIP-44 encrypted event, decrypt it:
+        const convKey = v2.utils.getConversationKey(privateKey, evt.pubkey);
+        decrypted = v2.decrypt(evt.content, convKey);
+        console.log('Decrypted content:', decrypted); 
+      } else {
+        decrypted = decrypt(privateKey, evt.pubkey, evt.content);
+        nip4 = true;
+      }
+
+      // Log the received event
+      this.logService.addEntry(
+        LogType.EVENT_RECEIVED,
+        `Received event type: ${evt.kind}`,
+        evt,
+        evt.pubkey
+      );
 
       // Parse the decrypted content
       const requestData = JSON.parse(decrypted);
@@ -317,7 +343,7 @@ export class NostrService {
       }
 
       // Look for matching client activation
-      const clientActivation = this.clientActivations().find(
+      let clientActivation = this.clientActivations().find(
         activation => activation.clientPubkey === evt.pubkey
       );
 
@@ -353,18 +379,27 @@ export class NostrService {
 
             if (activationIndex >= 0) {
               // Update the activation with client pubkey and ID
-              this.updateClientActivationOnConnect(
+              clientActivation = this.updateClientActivationOnConnect(
                 activationIndex,
                 evt.pubkey,
-                requestData.id
+                requestData.id,
+                nip4
               );
 
               // Send response back to client
-              this.sendResponse(evt.pubkey, requestData.id, "ack");
+              this.sendResponse(clientActivation!, evt.pubkey, requestData.id, "ack");
               console.log('Client connection activated successfully');
+
+              // Log the new connection
+              this.logService.addEntry(
+                LogType.CONNECTION,
+                `New client connected`,
+                { clientPubkey: evt.pubkey, pubkey: signerPubkey },
+                signerPubkey
+              );
             } else {
               console.warn('No matching activation found for secret:', secret);
-              this.sendResponse(evt.pubkey, requestData.id, null, { code: 401, message: "Unauthorized" });
+              this.sendResponse(clientActivation!, evt.pubkey, requestData.id, null, { code: 401, message: "Unauthorized" });
             }
           }
           break;
@@ -373,25 +408,25 @@ export class NostrService {
         case 'get_public_key': {
           // Check if client has permission
           if (!this.hasPermission(clientActivation, 'get_public_key')) {
-            this.sendResponse(evt.pubkey, requestData.id, null, { code: 403, message: "Permission denied" });
+            this.sendResponse(clientActivation!, evt.pubkey, requestData.id, null, { code: 403, message: "Permission denied" });
             break;
           }
 
           // Get public key for the requested client identity
           const publicKey = clientActivation!.pubkey;
-          this.sendResponse(evt.pubkey, requestData.id, publicKey);
+          this.sendResponse(clientActivation!, evt.pubkey, requestData.id, publicKey);
           break;
         }
 
         case 'ping': {
           // Simple ping-pong response
-          this.sendResponse(evt.pubkey, requestData.id, "pong");
+          this.sendResponse(clientActivation!, evt.pubkey, requestData.id, "pong");
           break;
         }
 
         case 'sign_event': {
           if (!requestData.params || requestData.params.length < 1) {
-            this.sendResponse(evt.pubkey, requestData.id, null, { code: 400, message: "Invalid parameters" });
+            this.sendResponse(clientActivation!, evt.pubkey, requestData.id, null, { code: 400, message: "Invalid parameters" });
             break;
           }
 
@@ -399,45 +434,69 @@ export class NostrService {
 
           // Check if client has permission for this event kind
           if (!this.hasPermission(clientActivation, `sign_event:${eventToSign.kind}`)) {
-            this.sendResponse(evt.pubkey, requestData.id, null, { code: 403, message: "Permission denied for this event kind" });
+            this.sendResponse(clientActivation!, evt.pubkey, requestData.id, null, { code: 403, message: "Permission denied for this event kind" });
             break;
           }
 
+          // Log the signing request
+          this.logService.addEntry(
+            LogType.SIGN_REQUEST,
+            `Signing request for event kind: ${eventToSign.kind}`,
+            eventToSign,
+            evt.pubkey
+          );
+
           // TODO: Implement actual event signing
           console.log('Request to sign event:', eventToSign);
-          this.sendResponse(evt.pubkey, requestData.id, null, { code: 501, message: "Signing not implemented yet" });
+          this.sendResponse(clientActivation!, evt.pubkey, requestData.id, null, { code: 501, message: "Signing not implemented yet" });
           break;
         }
 
         case 'nip04_encrypt':
         case 'nip04_decrypt': {
           if (!this.hasPermission(clientActivation, requestData.method)) {
-            this.sendResponse(evt.pubkey, requestData.id, null, { code: 403, message: "Permission denied" });
+            this.sendResponse(clientActivation!, evt.pubkey, requestData.id, null, { code: 403, message: "Permission denied" });
             break;
           }
 
+          // Log the encryption/decryption request
+          this.logService.addEntry(
+            LogType.ENCRYPTION,
+            `Request for ${requestData.method}`,
+            requestData.params,
+            evt.pubkey
+          );
+
           // TODO: Implement NIP-04 encryption/decryption
           console.log(`Request for ${requestData.method}:`, requestData.params);
-          this.sendResponse(evt.pubkey, requestData.id, null, { code: 501, message: `${requestData.method} not implemented yet` });
+          this.sendResponse(clientActivation!, evt.pubkey, requestData.id, null, { code: 501, message: `${requestData.method} not implemented yet` });
           break;
         }
 
         case 'nip44_encrypt':
         case 'nip44_decrypt': {
           if (!this.hasPermission(clientActivation, requestData.method)) {
-            this.sendResponse(evt.pubkey, requestData.id, null, { code: 403, message: "Permission denied" });
+            this.sendResponse(clientActivation!, evt.pubkey, requestData.id, null, { code: 403, message: "Permission denied" });
             break;
           }
 
+          // Log the encryption/decryption request
+          this.logService.addEntry(
+            LogType.ENCRYPTION,
+            `Request for ${requestData.method}`,
+            requestData.params,
+            evt.pubkey
+          );
+
           // TODO: Implement NIP-44 encryption/decryption
           console.log(`Request for ${requestData.method}:`, requestData.params);
-          this.sendResponse(evt.pubkey, requestData.id, null, { code: 501, message: `${requestData.method} not implemented yet` });
+          this.sendResponse(clientActivation!, evt.pubkey, requestData.id, null, { code: 501, message: `${requestData.method} not implemented yet` });
           break;
         }
 
         default:
           console.warn('Unhandled method:', requestData.method);
-          this.sendResponse(evt.pubkey, requestData.id, null, { code: 400, message: "Unsupported method" });
+          this.sendResponse(clientActivation!, evt.pubkey, requestData.id, null, { code: 400, message: "Unsupported method" });
           break;
       }
     } catch (error) {
@@ -447,6 +506,7 @@ export class NostrService {
 
   // Helper method to send responses back to clients
   private sendResponse(
+    clientActivation: ClientActivation,
     pubkey: string,
     id: string,
     result: any = null,
@@ -466,11 +526,15 @@ export class NostrService {
     try {
       const privateKeyHex = this.account()?.privateKey;
       const privateKey = hexToBytes(privateKeyHex!);
-      const convKey = v2.utils.getConversationKey(privateKey, pubkey);
+      let encryptedContent = undefined;
 
-      // Encrypt the response
-      const encryptedContent = v2.encrypt(JSON.stringify(response), convKey);
-
+      if (clientActivation.nip4) {
+        encryptedContent = encrypt(privateKey, pubkey, JSON.stringify(response));
+       } else {
+        const convKey = v2.utils.getConversationKey(privateKey, pubkey);
+        encryptedContent = v2.encrypt(JSON.stringify(response), convKey);
+      }
+  
       const responseEvent: UnsignedEvent = {
         kind: kinds.NostrConnect,
         pubkey: this.account()!.publicKey,
