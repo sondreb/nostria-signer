@@ -12,6 +12,7 @@ import { ToastService } from '../../services/toast.service';
 import { LogService, LogType } from '../../services/log.service';
 import { TauriService } from '../../services/tauri.service';
 import QRCode from 'qrcode';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-setup',
@@ -26,6 +27,7 @@ export class SetupComponent {
   private toastService = inject(ToastService);
   private logService = inject(LogService);
   private tauriService = inject(TauriService);
+  private router = inject(Router);
 
   keys = this.nostrService.keys;
   account = this.nostrService.account;
@@ -168,12 +170,8 @@ export class SetupComponent {
     this.copyToClipboard(connectionUrl);
   }
 
-  resetAllKeys() {
-    if (confirm('Are you sure you want to reset all keys? This action cannot be undone.')) {
-      this.nostrService.reset();
-      this.toastService.show('All keys have been reset', 'info');
-      this.logService.addEntry(LogType.CONNECTION, 'All keys have been reset');
-    }
+  navigateToReset(): void {
+    this.router.navigate(['/reset']);
   }
 
   deleteKey(publicKey: string) {

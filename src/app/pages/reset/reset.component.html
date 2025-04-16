@@ -1,0 +1,57 @@
+<div class="container">
+  <div class="card reset-card">
+    <div class="warning-header">
+      <div class="warning-icon">⚠️</div>
+      <h1>Reset All Keys</h1>
+    </div>
+    
+    <div class="reset-content">
+      <p class="warning-text">
+        You are about to permanently delete all your keys and client connections.
+        <strong>This action cannot be undone.</strong>
+      </p>
+      
+      <div class="keys-list">
+        <h3>The following keys will be deleted:</h3>
+        
+        @if (account()) {
+          <div class="key-item">
+            <div class="key-type">Signer Key</div>
+            <div class="key-value">{{ account()?.publicKey }}</div>
+          </div>
+        }
+        
+        @for (key of keys(); track key.publicKey) {
+          <div class="key-item">
+            <div class="key-type">Client Identity</div>
+            <div class="key-value">{{ key.publicKey }}</div>
+          </div>
+        }
+      </div>
+      
+      @if (!isConfirming()) {
+        <div class="action-row">
+          <button class="btn-cancel" (click)="cancelReset()">Cancel</button>
+          <button class="btn-danger" (click)="confirmReset()">Proceed with Reset</button>
+        </div>
+      } @else {
+        <div class="confirm-reset">
+          <p>Type <strong>RESET</strong> to confirm:</p>
+          <input type="text" 
+                 class="confirm-input" 
+                 placeholder="RESET" 
+                 [value]="typedConfirmation()" 
+                 (input)="updateConfirmation($event)">
+          <div class="action-row">
+            <button class="btn-cancel" (click)="cancelReset()">Cancel</button>
+            <button class="btn-danger" 
+                   [disabled]="typedConfirmation() !== 'RESET'"
+                   (click)="executeReset()">
+              Reset All Keys
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</div>

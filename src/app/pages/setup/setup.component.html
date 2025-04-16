@@ -5,7 +5,7 @@
 <div class="container">
   @if (hasKeys()) {
   <div class="card">
-    <h1 class="text-center">Nostria Signer</h1>
+    <h1 class="nostria-header text-center">Nostria Signer</h1>
 
     <div class="tabs">
       <button class="tab" [class.active]="activeTab() === 'clients'" (click)="setActiveTab('clients')">
@@ -315,7 +315,7 @@
     <div class="actions mt-4">
       <button class="primary" (click)="generateNewKey()">Generate New Client Identity</button>
       <button class="secondary" (click)="toggleImportModal()">Import Client Identity</button>
-      <button class="secondary" (click)="resetAllKeys()">Reset All Keys</button>
+      <button class="danger" (click)="navigateToReset()">Reset All Keys</button>
     </div>
   </div>
   } @else {

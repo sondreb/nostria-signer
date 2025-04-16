@@ -1060,3 +1060,19 @@
     margin-bottom: 0.5rem;
   }
 }
+
+.danger {
+  background-color: var(--error-color);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.danger:hover {
+  background-color: #d32f2f; /* Darker red on hover */
+}

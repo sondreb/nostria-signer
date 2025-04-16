@@ -4,7 +4,7 @@ Make sure to use new flow syntax of latest Angular, which is @if instead of *ngI
 
 Always use separate file for component (TypeScript), markup (HTML) and styles (CSS).
 
-Make sure to put most styles in the global styles.scss file, and only use component styles for component-specific styles.
+Make sure to put most styles in the global styles.css file, and only use component styles for component-specific styles.
 
 Always use "fetch" for http request instead of HttpClient.
 

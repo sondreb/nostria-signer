@@ -12,6 +12,10 @@ export const routes: Routes = [
     component: SetupComponent
   },
   {
+    path: 'reset',
+    loadComponent: () => import('./pages/reset/reset.component').then(m => m.ResetComponent)
+  },
+  {
     path: '**',
     redirectTo: ''
   }
