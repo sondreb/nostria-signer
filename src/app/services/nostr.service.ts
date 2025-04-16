@@ -15,7 +15,9 @@ export const STORAGE_KEYS = {
   SIGNER_KEYS: 'nostria-signer-keys',
   SIGNER_KEY: 'nostria-signer-key',
   SIGNER_CLIENTS: 'nostria-signer-clients',
-  RELAYS: 'nostria-relays'
+  RELAYS: 'nostria-signer-relays',
+  SIGNER_LOGS: 'nostria-signer-logs',
+  SIGNER_THEME: 'nostria-signer-theme',
 };
 
 export interface NostrAccount {

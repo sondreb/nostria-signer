@@ -815,3 +815,56 @@ select {
 .danger:hover {
   background-color: #d32f2f; /* Darker red on hover */
 }
+
+/* Global layout fixes to prevent elements from being clipped */
+
+/* Fix for any container that might be causing clipping */
+.container, 
+.card, 
+.key-card, 
+.activations-list,
+.activation-item,
+.permissions-container,
+.copy-container {
+  overflow: visible !important;
+}
+
+/* Ensure buttons don't get clipped */
+button, 
+.action-btn, 
+.primary-btn, 
+.secondary-btn {
+  z-index: 3;
+  position: relative;
+  overflow: visible !important;
+}
+
+/* Better spacing for activation items */
+.activation-item {
+  padding: 1.5rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+/* Ensure text containers don't overflow their parent */
+.copy-text, 
+.permissions-text {
+  max-width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Better mobile layouts */
+@media (max-width: 768px) {
+  .activation-actions {
+    width: 100%;
+    justify-content: flex-start;
+    margin-top: 1rem;
+  }
+  
+  .action-btn, 
+  .action-btn-danger {
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    min-height: 2.5rem;
+  }
+}

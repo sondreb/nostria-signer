@@ -1,4 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
+import { STORAGE_KEYS } from './nostr.service';
 
 export type Theme = 'light' | 'dark';
 
@@ -14,7 +15,7 @@ export class UiService {
   
   private initTheme(): void {
     // Check if user has a preference saved
-    const savedTheme = localStorage.getItem('nostria-theme') as Theme | null;
+    const savedTheme = localStorage.getItem(STORAGE_KEYS.SIGNER_THEME) as Theme | null;
     
     // If saved preference exists, use it
     if (savedTheme) {
@@ -32,7 +33,7 @@ export class UiService {
     
     // Listen for system theme changes
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-      if (localStorage.getItem('nostria-theme')) return; // Don't override user preference
+      if (localStorage.getItem(STORAGE_KEYS.SIGNER_THEME)) return; // Don't override user preference
       
       const newTheme: Theme = e.matches ? 'dark' : 'light';
       this.theme.set(newTheme);
@@ -43,7 +44,7 @@ export class UiService {
   toggleTheme(): void {
     const newTheme: Theme = this.theme() === 'light' ? 'dark' : 'light';
     this.theme.set(newTheme);
-    localStorage.setItem('nostria-theme', newTheme);
+    localStorage.setItem(STORAGE_KEYS.SIGNER_THEME, newTheme);
     this.applyTheme(newTheme);
   }
   
