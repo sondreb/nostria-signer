@@ -12,6 +12,7 @@ export class TauriService {
 
         if (!result.success) {
             this.useBrowserStorage = true;
+            console.error(result.message);
         }
 
         return result.message;
@@ -22,21 +23,9 @@ export class TauriService {
 
         if (!result.success) {
             this.useBrowserStorage = true;
+            console.error(result.message);
         }
 
         return result.message;
     }
 }
-
-invoke<string>("save_private_key", { publicKey: publicKeyHex, privateKey: privateKeyHex }).then((result: any) => {
-    if (!result.success) {
-        alert('Failed to use secure key storage:' + result.message);
-    }
-
-    alert(result);
-    console.log(result);
-});
-
-// invoke<string>("get_private_key", { publicKey: publicKeyHex }).then((text) => {
-//   alert(text);
-// });
