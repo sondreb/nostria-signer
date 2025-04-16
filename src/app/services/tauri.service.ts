@@ -1,55 +1,30 @@
 import { Injectable, inject } from "@angular/core";
 import { invoke } from "@tauri-apps/api/core";
 import { getVersion } from '@tauri-apps/api/app';
-
-// Add declaration for Tauri's global window property
-declare global {
-  interface Window {
-    __TAURI__?: any;
-  }
-}
+import { isTauri } from "@tauri-apps/api/core";
 
 @Injectable({
     providedIn: 'root'
 })
 export class TauriService {
     useBrowserStorage = true; // Default to browser storage for safety
-    private isRunningInTauri = false;
-    
-    constructor() {
-        // Check if running in Tauri environment
-        this.checkTauriEnvironment();
-    }
-    
-    private async checkTauriEnvironment(): Promise<void> {
-        // First, do a simple check if we're in a browser environment
-        if (typeof window.__TAURI__ === 'undefined') {
-            console.log('Not running in Tauri environment (window.__TAURI__ check), using browser storage');
-            this.useBrowserStorage = true;
-            this.isRunningInTauri = false;
-            return;
-        }
+    private isRunningInTauri = isTauri();
 
-        try {
-            // Try to get the app version - this is a valid Tauri API call
-            // that will fail if not running in Tauri environment
-            const version = await getVersion();
-            console.log('Tauri Version:', version);
-            this.isRunningInTauri = true;
+    constructor() {
+        console.log('IS TUARI:', this.isRunningInTauri);
+
+        if (this.isRunningInTauri) {
             this.useBrowserStorage = false;
-        } catch (e) {
-            console.log('Not running in Tauri environment, using browser storage');
-            this.useBrowserStorage = true;
-            this.isRunningInTauri = false;
         }
     }
 
     async savePrivateKey(publicKey: string, privateKey: string): Promise<boolean> {
+        debugger;
         // If not running in Tauri or already set to use browser storage
         if (this.useBrowserStorage || !this.isRunningInTauri) {
             return false; // Indicate that secure storage wasn't used
         }
-        
+
         try {
             const result: any = await invoke("save_private_key", { publicKey, privateKey });
 
@@ -72,7 +47,7 @@ export class TauriService {
         if (this.useBrowserStorage || !this.isRunningInTauri) {
             return null; // Indicate that secure storage wasn't used
         }
-        
+
         try {
             const result: any = await invoke("get_private_key", { publicKey });
 
@@ -89,12 +64,12 @@ export class TauriService {
             return null;
         }
     }
-    
+
     async deletePrivateKey(publicKey: string): Promise<boolean> {
         if (this.useBrowserStorage || !this.isRunningInTauri) {
             return false;
         }
-        
+
         try {
             const result: any = await invoke("delete_private_key", { publicKey });
             return result.success;
