@@ -383,4 +383,20 @@
   }
 
   <app-theme-switcher></app-theme-switcher>
+
+  <!-- Add storage security notification -->
+  <div class="storage-security-notification" [class.warning]="isSecureStorage() === false" [class.secure]="isSecureStorage() === true">
+    <div class="notification-icon">
+      @if (isSecureStorage() === true) {
+        <span>🔒</span>
+      } @else if (isSecureStorage() === false) {
+        <span>⚠️</span>
+      } @else {
+        <span>⌛</span>
+      }
+    </div>
+    <div class="notification-message">
+      {{ getStorageSecurityMessage() }}
+    </div>
+  </div>
 </div>

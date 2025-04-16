@@ -10,6 +10,7 @@ import { FormsModule } from '@angular/forms';
 import { ThemeSwitcherComponent } from '../../components/theme-switcher/theme-switcher.component';
 import { ToastService } from '../../services/toast.service';
 import { LogService, LogType } from '../../services/log.service';
+import { TauriService } from '../../services/tauri.service';
 import QRCode from 'qrcode';
 
 @Component({
@@ -24,6 +25,7 @@ export class SetupComponent {
   private uiService = inject(UiService);
   private toastService = inject(ToastService);
   private logService = inject(LogService);
+  private tauriService = inject(TauriService);
 
   keys = this.nostrService.keys;
   account = this.nostrService.account;
@@ -46,6 +48,7 @@ export class SetupComponent {
   currentQrActivation = signal<ClientActivation | null>(null);
   logFilter = signal<LogType | string | undefined>(undefined);
   logPubkeyFilter = signal<string | undefined>(undefined);
+  isSecureStorage = signal<boolean | null>(null);
 
   constructor() {
     effect(() => {
@@ -64,6 +67,9 @@ export class SetupComponent {
         }
       }
     });
+
+    // Get storage security status from Tauri service
+    this.checkSecureStorage();
   }
 
   ngOnInit() {
@@ -382,5 +388,18 @@ export class SetupComponent {
   resetLogFilters() {
     this.logFilter.set(undefined);
     this.logPubkeyFilter.set(undefined);
+  }
+
+  async checkSecureStorage(): Promise<void> {
+    // Simply set the secure storage status based on the TauriService
+    this.isSecureStorage.set(!this.tauriService.useBrowserStorage);
+  }
+
+  getStorageSecurityMessage(): string {
+    if (this.isSecureStorage() === true) {
+      return 'Your private keys are being stored securely using native OS secure storage.';
+    } else {
+      return 'Warning: Your private keys are being stored in browser local storage, which is less secure. For better security, use the desktop app.';
+    }
   }
 }

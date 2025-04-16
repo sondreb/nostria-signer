@@ -1012,3 +1012,51 @@
 .pubkey-value:hover {
   color: var(--primary-color);
 }
+
+/* Storage Security Notification */
+.storage-security-notification {
+  margin-top: 2rem;
+  padding: 1rem 1.5rem;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background-color: var(--info-box-bg);
+  border: 1px solid var(--border-color);
+}
+
+.storage-security-notification.warning {
+  background-color: var(--warning-light);
+  border-color: var(--warning-color);
+}
+
+.storage-security-notification.secure {
+  background-color: var(--success-light);
+  border-color: var(--success-color);
+}
+
+.notification-icon {
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notification-message {
+  flex: 1;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+/* Make notification responsive */
+@media (max-width: 768px) {
+  .storage-security-notification {
+    flex-direction: column;
+    text-align: center;
+    padding: 1rem;
+  }
+  
+  .notification-icon {
+    margin-bottom: 0.5rem;
+  }
+}

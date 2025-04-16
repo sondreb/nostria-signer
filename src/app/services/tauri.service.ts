@@ -1,5 +1,6 @@
 import { Injectable, inject } from "@angular/core";
 import { invoke } from "@tauri-apps/api/core";
+import { getVersion } from '@tauri-apps/api/app';
 
 @Injectable({
     providedIn: 'root'
@@ -15,8 +16,11 @@ export class TauriService {
     
     private async checkTauriEnvironment(): Promise<void> {
         try {
-            // Try to invoke a simple Tauri command
-            await invoke('plugin:app|platform');
+            debugger;
+            // Try to get the app version - this is a valid Tauri API call
+            // that will fail if not running in Tauri environment
+            const version = await getVersion();
+            console.log('Tauri Version:', version);
             this.isRunningInTauri = true;
         } catch (e) {
             console.log('Not running in Tauri environment, using browser storage');
@@ -25,6 +29,7 @@ export class TauriService {
     }
 
     async savePrivateKey(publicKey: string, privateKey: string): Promise<boolean> {
+        debugger;
         // If not running in Tauri or already set to use browser storage
         if (this.useBrowserStorage) {
             return false; // Indicate that secure storage wasn't used
@@ -48,6 +53,7 @@ export class TauriService {
     }
 
     async getPrivateKey(publicKey: string): Promise<string | null> {
+        debugger;
         // If not running in Tauri or set to use browser storage
         if (this.useBrowserStorage) {
             return null; // Indicate that secure storage wasn't used
