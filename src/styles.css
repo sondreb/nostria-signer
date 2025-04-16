@@ -76,7 +76,6 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  overflow-x: hidden; /* Prevent horizontal scrolling */
 }
 
 .container {
@@ -84,7 +83,6 @@ body {
   max-width: 1080px;
   margin: 0 auto;
   padding: 2rem 1rem;
-  overflow-x: hidden; /* Prevent horizontal scrolling */
 }
 
 .dark-theme {
@@ -125,7 +123,6 @@ body {
   margin-bottom: 1.5rem;
   transition: transform var(--transition-normal), box-shadow var(--transition-normal);
   border: 1px solid var(--border-color);
-  overflow-x: hidden; /* Prevent horizontal scrolling */
 }
 
 /* .card:hover {
@@ -655,7 +652,6 @@ select {
 .feature-card {
   background-color: var(--feature-card-bg);
   border: 1px solid var(--border-color);
-  overflow-x: hidden; /* Prevent horizontal scrolling */
 }
 
 /* Update info boxes for theme support */
@@ -860,7 +856,6 @@ button,
 .feature-row,
 .action-buttons {
   max-width: 100%;
-  overflow-x: hidden; /* Prevent horizontal scrolling */
 }
 
 /* Ensure images don't cause overflow */
