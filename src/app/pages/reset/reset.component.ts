@@ -22,6 +22,7 @@ export class ResetComponent {
   account = this.nostrService.account;
   isConfirming = signal<boolean>(false);
   typedConfirmation = signal<string>('');
+  showHexFormat = signal<Record<string, boolean>>({});
 
   confirmReset(): void {
     this.isConfirming.set(true);
@@ -45,5 +46,24 @@ export class ResetComponent {
   updateConfirmation(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.typedConfirmation.set(input.value);
+  }
+
+  togglePubkeyFormat(publicKey: string): void {
+    this.showHexFormat.update(formats => {
+      const currentFormats = { ...formats };
+      currentFormats[publicKey] = !currentFormats[publicKey];
+      return currentFormats;
+    });
+  }
+
+  isHexFormatActive(publicKey: string): boolean {
+    return !!this.showHexFormat()[publicKey];
+  }
+
+  getDisplayPublicKey(publicKey: string): string {
+    if (this.isHexFormatActive(publicKey)) {
+      return this.nostrService.convertToHexIfNeeded(publicKey);
+    }
+    return this.nostrService.convertToNpubIfNeeded(publicKey);
   }
 }

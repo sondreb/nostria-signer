@@ -17,14 +17,24 @@
         @if (account()) {
           <div class="key-item">
             <div class="key-type">Signer Key</div>
-            <div class="key-value">{{ account()?.publicKey }}</div>
+            <div class="key-value-container">
+              <div class="key-value">{{ getDisplayPublicKey(account()!.publicKey) }}</div>
+              <button class="format-toggle" (click)="togglePubkeyFormat(account()!.publicKey)">
+                {{ isHexFormatActive(account()!.publicKey) ? 'npub' : 'hex' }}
+              </button>
+            </div>
           </div>
         }
         
         @for (key of keys(); track key.publicKey) {
           <div class="key-item">
             <div class="key-type">Client Identity</div>
-            <div class="key-value">{{ key.publicKey }}</div>
+            <div class="key-value-container">
+              <div class="key-value">{{ getDisplayPublicKey(key.publicKey) }}</div>
+              <button class="format-toggle" (click)="togglePubkeyFormat(key.publicKey)">
+                {{ isHexFormatActive(key.publicKey) ? 'npub' : 'hex' }}
+              </button>
+            </div>
           </div>
         }
       </div>
