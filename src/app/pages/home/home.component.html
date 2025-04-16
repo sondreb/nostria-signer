@@ -1,4 +1,4 @@
-<div class="container">
+<div class="container home-container">
   @if (loading()) {
     <div class="text-center">
       <div class="spinner"></div>
@@ -85,7 +85,7 @@
           </div>
         }
         
-        <div class="features mt-4">
+        <div class="features">
           <div class="feature-row">
             <div class="feature-card">
               <span class="feature-icon">🔒</span>
@@ -106,6 +106,8 @@
         </div>
       </div>
     </div>
+    <div class="theme-switcher-container">
+      <app-theme-switcher></app-theme-switcher>
+    </div>
   }
-  <app-theme-switcher></app-theme-switcher>
 </div>

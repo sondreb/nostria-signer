@@ -30,15 +30,14 @@ export class HomeComponent {
   theme = this.uiService.theme;
 
   constructor() {
-    // Check if account exists and redirect if necessary
-    this.initializeComponent();
-
-    // Set up redirection effect
     effect(() => {
       if (this.nostrService.hasAccount() && !this.loading()) {
         this.router.navigate(['/setup']);
       }
     });
+
+    // Initialize component
+    this.initializeComponent();
   }
 
   private async initializeComponent(): Promise<void> {

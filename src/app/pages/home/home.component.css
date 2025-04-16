@@ -1,9 +1,17 @@
+.home-container {
+  position: relative;
+  overflow-x: hidden;
+  width: 100%;
+  padding-bottom: 60px; /* Add space for the theme switcher at bottom */
+}
+
 .welcome-card {
   text-align: center;
   max-width: 800px;
   margin: 0 auto;
   position: relative;
   overflow: hidden;
+  width: 100%;
 }
 
 .bg-pattern {
@@ -21,6 +29,7 @@
 .content {
   position: relative;
   z-index: 1;
+  width: 100%;
 }
 
 .app-logo {
@@ -59,6 +68,7 @@
 .action-buttons {
   display: flex;
   justify-content: center;
+  flex-wrap: wrap; /* Allow wrapping on smaller screens */
   gap: 1rem;
   margin-top: 2rem;
 }
@@ -79,6 +89,7 @@
 
 .form-group {
   margin-bottom: 1.5rem;
+  width: 100%;
 }
 
 .form-control {
@@ -130,6 +141,8 @@
   text-align: left;
   position: relative;
   margin: 2rem 0;
+  max-width: 100%;
+  word-wrap: break-word;
 }
 
 .info-box::before {
@@ -165,6 +178,7 @@
   color: var(--text-color);
   position: relative;
   margin-bottom: 1.5rem;
+  word-wrap: break-word;
 }
 
 .warning-message::before {
@@ -188,14 +202,23 @@
   margin-right: 6px;
 }
 
+.features {
+  margin-top: 3rem;
+  width: 100%;
+}
+
 .feature-row {
   display: flex;
   gap: 1.5rem;
-  margin-top: 3rem;
+  margin-top: 1rem;
+  flex-wrap: wrap; /* Allow wrapping on smaller screens */
+  justify-content: center;
 }
 
 .feature-card {
   flex: 1;
+  min-width: 200px; /* Minimum width to prevent too narrow cards */
+  max-width: calc(33.333% - 1rem); /* Limit maximum width */
   background-color: var(--feature-card-bg);
   padding: 1.5rem;
   border-radius: var(--radius-md);
@@ -230,6 +253,13 @@
   margin-right: 8px;
 }
 
+.theme-switcher-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 100;
+}
+
 /* Responsive styles */
 @media (max-width: 768px) {
   .welcome-title {
@@ -243,7 +273,7 @@
   
   .action-buttons {
     flex-direction: column;
-    padding: 0 2rem;
+    padding: 0 1rem;
   }
   
   .action-buttons button {
@@ -254,10 +284,25 @@
   .import-form {
     padding: 1.5rem;
     margin: 1.5rem 1rem 0;
+    max-width: calc(100% - 2rem);
   }
   
   .feature-row {
     flex-direction: column;
     gap: 1rem;
+  }
+  
+  .feature-card {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 576px) {
+  .welcome-card {
+    padding: 1.5rem 1rem;
+  }
+  
+  .info-box {
+    padding: 1rem;
   }
 }
