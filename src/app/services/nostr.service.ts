@@ -73,8 +73,7 @@ export class NostrService {
         // Only keep the required properties for each key
         const validKeys = storedKeys.map((key: any) => ({
           publicKey: key.publicKey,
-          privateKey: key.privateKey,
-          secret: key.secret
+          privateKey: key.privateKey
         }));
         this.keys.set(validKeys);
       } catch (e) {
@@ -406,6 +405,7 @@ export class NostrService {
         }
 
         case 'get_public_key': {
+          debugger;
           // Check if client has permission
           if (!this.hasPermission(clientActivation, 'get_public_key')) {
             this.sendResponse(clientActivation!, evt.pubkey, requestData.id, null, { code: 403, message: "Permission denied" });
@@ -430,7 +430,7 @@ export class NostrService {
             break;
           }
 
-          const eventToSign = requestData.params[0];
+          const eventToSign = JSON.parse(requestData.params[0]);
 
           // Check if client has permission for this event kind
           if (!this.hasPermission(clientActivation, `sign_event:${eventToSign.kind}`)) {
@@ -446,9 +446,19 @@ export class NostrService {
             evt.pubkey
           );
 
+          debugger;
+
+          const clientKeyPair = this.getClientKey(clientActivation!.pubkey)!;
+          const clientPrivateKey = clientKeyPair.privateKey;
+
+          // Some Nostr clients put pubkey in the event data, this must be removed:
+          delete eventToSign.pubkey;
+
+          const verifiedEvent = finalizeEvent(eventToSign, hexToBytes(clientPrivateKey!));
+
           // TODO: Implement actual event signing
           console.log('Request to sign event:', eventToSign);
-          this.sendResponse(clientActivation!, evt.pubkey, requestData.id, null, { code: 501, message: "Signing not implemented yet" });
+          this.sendResponse(clientActivation!, evt.pubkey, requestData.id, JSON.stringify(verifiedEvent), null);
           break;
         }
 
@@ -516,6 +526,8 @@ export class NostrService {
       console.error('Cannot send response: pool not initialized');
       return;
     }
+
+    debugger;
 
     const response = {
       id,
@@ -618,8 +630,7 @@ export class NostrService {
 
       const keyPairClient: NostrAccount = {
         publicKey: publicKeyClient,
-        privateKey: bytesToHex(privateKeyClient),
-        secret
+        privateKey: bytesToHex(privateKeyClient)
       };
 
       this.keys.update(array => [...array, keyPairClient]);
@@ -652,8 +663,7 @@ export class NostrService {
 
       const keyPairClient: NostrAccount = {
         publicKey: publicKeyClient,
-        privateKey: bytesToHex(privateKeyClient),
-        secret
+        privateKey: bytesToHex(privateKeyClient)
       };
 
       this.keys.update(array => [...array, keyPairClient]);
@@ -757,6 +767,10 @@ export class NostrService {
       console.error('Error importing Nostr account:', error);
       return false;
     }
+  }
+
+  getClientKey(publicKey: string): NostrAccount | undefined {
+    return this.keys().find(key => key.publicKey === publicKey);
   }
 
   // Reset all accounts
