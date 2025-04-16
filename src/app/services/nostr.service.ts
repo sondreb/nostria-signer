@@ -311,8 +311,6 @@ export class NostrService {
       let decrypted = undefined;
       let nip4 = false;
 
-      debugger;
-
       if (evt.content.indexOf('iv=') === -1) {
         // The content of evt is a NIP-44 encrypted event, decrypt it:
         const convKey = v2.utils.getConversationKey(privateKey, evt.pubkey);
@@ -405,7 +403,6 @@ export class NostrService {
         }
 
         case 'get_public_key': {
-          debugger;
           // Check if client has permission
           if (!this.hasPermission(clientActivation, 'get_public_key')) {
             this.sendResponse(clientActivation!, evt.pubkey, requestData.id, null, { code: 403, message: "Permission denied" });
@@ -446,8 +443,6 @@ export class NostrService {
             evt.pubkey
           );
 
-          debugger;
-
           const clientKeyPair = this.getClientKey(clientActivation!.pubkey)!;
           const clientPrivateKey = clientKeyPair.privateKey;
 
@@ -477,9 +472,27 @@ export class NostrService {
             evt.pubkey
           );
 
+          let result: string | undefined = undefined;
+
           // TODO: Implement NIP-04 encryption/decryption
           console.log(`Request for ${requestData.method}:`, requestData.params);
-          this.sendResponse(clientActivation!, evt.pubkey, requestData.id, null, { code: 501, message: `${requestData.method} not implemented yet` });
+
+          const clientKeyPair = this.getClientKey(clientActivation!.pubkey)!;
+          const clientPrivateKey = clientKeyPair.privateKey;
+
+          if (requestData.method === 'nip04_encrypt') {
+            const [pubkey, plaintext] = requestData.params;
+
+            const cipher = encrypt(clientPrivateKey, pubkey, plaintext);
+            result = cipher;
+          } else if (requestData.method === 'nip04_decrypt') {
+            const [pubkey, cipher] = requestData.params;
+
+            const plaintext = decrypt(clientKeyPair.privateKey, pubkey, cipher);
+            result = plaintext;
+          }
+
+          this.sendResponse(clientActivation!, evt.pubkey, requestData.id, result);
           break;
         }
 
@@ -526,8 +539,6 @@ export class NostrService {
       console.error('Cannot send response: pool not initialized');
       return;
     }
-
-    debugger;
 
     const response = {
       id,
