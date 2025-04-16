@@ -18,8 +18,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [macos-latest, ubuntu-latest, windows-latest, ubuntu-latest]
+        platform: [macos-latest, ubuntu-latest, windows-latest]
         include:
+          - platform: ubuntu-latest
+            build-type: linux-desktop
+            id: linux
           - platform: ubuntu-latest
             build-type: android
             id: android
@@ -45,7 +48,7 @@ jobs:
         if: matrix.build-type != 'android'
 
       - name: Install dependencies (ubuntu only)
-        if: matrix.platform == 'ubuntu-latest' && matrix.build-type != 'android'
+        if: matrix.platform == 'ubuntu-latest' && matrix.build-type == 'linux-desktop'
         run: |
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
