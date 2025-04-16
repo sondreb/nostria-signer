@@ -118,6 +118,19 @@ jobs:
           EOF
         shell: bash
 
+      # Create the gradle.properties file with signing configuration
+      - name: Configure Android signing
+        if: matrix.build-type == 'android'
+        run: |
+          mkdir -p ~/.gradle
+          cat > ~/.gradle/gradle.properties << EOF
+          RELEASE_STORE_FILE=${{ env.KEYSTORE_PATH }}
+          RELEASE_STORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS=${{ secrets.KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}
+          EOF
+        shell: bash
+
       # Create mobile specific Tauri config
       - name: Configure mobile.json for Android
         if: matrix.build-type == 'android'
@@ -150,11 +163,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NDK_HOME: ${{ env.NDK_HOME }}
-          # Only include relevant Android signing variables
-          ANDROID_KEYSTORE_PATH: ${{ env.KEYSTORE_PATH }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          # Pass these as environment variables for Tauri v2
+          TAURI_SIGNING_STORE_FILE: ${{ env.KEYSTORE_PATH }}
+          TAURI_SIGNING_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          TAURI_SIGNING_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          TAURI_SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Rename Android artifacts
         if: matrix.build-type == 'android'

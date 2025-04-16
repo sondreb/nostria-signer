@@ -1,7 +1,10 @@
 {
   "app": {
     "bundleId": "no.brainbox.nostria-signer",
-    "icon": "icons/128x128@2x.png"
+    "icon": "icons/128x128@2x.png",
+    "android": {
+      "minSdkVersion": 24
+    }
   },
   "android": {
     "signing": {
@@ -10,5 +13,12 @@
       "keyAlias": "${ANDROID_KEY_ALIAS}",
       "keyPassword": "${ANDROID_KEY_PASSWORD}"
     }
+  },
+  "build": {
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist/app/browser"
+  },
+  "bundle": {
+    "identifier": "no.brainbox.nostria-signer"
   }
 }

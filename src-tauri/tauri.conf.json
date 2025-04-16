@@ -34,15 +34,6 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ],
-    "android": {
-      "minSdkVersion": 24,
-      "signing": {
-        "keystore": "${ANDROID_KEYSTORE_PATH}",
-        "keystorePassword": "${ANDROID_KEYSTORE_PASSWORD}",
-        "keyAlias": "${ANDROID_KEY_ALIAS}",
-        "keyPassword": "${ANDROID_KEY_PASSWORD}"
-      }
-    }
+    ]
   }
 }
