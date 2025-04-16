@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 import { UiService } from '../../services/ui.service';
 import { ThemeSwitcherComponent } from '../../components/theme-switcher/theme-switcher.component';
 import { ToastService } from '../../services/toast.service';
+import { invoke } from "@tauri-apps/api/core";
 
 @Component({
   selector: 'app-home',
@@ -47,6 +48,14 @@ export class HomeComponent {
   async onGetStarted(): Promise<void> {
     await this.nostrService.generateSignerAccount();
     this.toastService.show('Signer account generated successfully', 'success');
+  }
+
+  async verifyStorage() {
+    console.log('Attempting to verify OS device secure storage...');
+
+    invoke<string>("greet", { name }).then((text) => {
+      alert(text);
+    });
   }
   
   toggleImportView(): void {
