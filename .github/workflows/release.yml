@@ -62,6 +62,12 @@ jobs:
         if: matrix.build-type == 'android'
         uses: android-actions/setup-android@v2
 
+      - name: Install Android NDK
+        if: matrix.build-type == 'android'
+        run: |
+          sdkmanager --install "ndk;25.2.9519653"
+          echo "NDK_HOME=$ANDROID_SDK_ROOT/ndk/25.2.9519653" >> $GITHUB_ENV
+
       - name: Install Rust targets for Android
         if: matrix.build-type == 'android'
         run: |
@@ -88,6 +94,7 @@ jobs:
           npm run tauri android build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NDK_HOME: ${{ env.NDK_HOME }}
 
       - name: Upload Android artifacts to release
         if: matrix.build-type == 'android'
