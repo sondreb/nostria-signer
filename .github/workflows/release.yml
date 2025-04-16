@@ -92,6 +92,36 @@ jobs:
           releaseDraft: true
           prerelease: ${{ github.event.inputs.prerelease }}
 
+      - name: Setup Android keystore
+        if: matrix.build-type == 'android'
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore.jks
+          echo "KEYSTORE_PATH=$(pwd)/keystore.jks" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Create signing config for Android
+        if: matrix.build-type == 'android'
+        run: |
+          mkdir -p src-tauri/gen/android
+          cat > src-tauri/gen/android/signing.gradle << EOF
+          android {
+            signingConfigs {
+              release {
+                storeFile file("${{ env.KEYSTORE_PATH }}")
+                storePassword "${{ secrets.KEYSTORE_PASSWORD }}"
+                keyAlias "${{ secrets.KEY_ALIAS }}"
+                keyPassword "${{ secrets.KEY_PASSWORD }}"
+              }
+            }
+            buildTypes {
+              release {
+                signingConfig signingConfigs.release
+              }
+            }
+          }
+          EOF
+        shell: bash
+
       - name: Build Android app
         if: matrix.build-type == 'android'
         run: |
@@ -99,6 +129,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NDK_HOME: ${{ env.NDK_HOME }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Rename Android artifacts
         if: matrix.build-type == 'android'
