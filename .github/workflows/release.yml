@@ -18,11 +18,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [macos-latest, ubuntu-latest, windows-latest]
         include:
+          - platform: macos-latest
+            build-type: desktop
+          - platform: windows-latest
+            build-type: desktop
           - platform: ubuntu-latest
-            build-type: linux-desktop
-            id: linux
+            build-type: desktop
           - platform: ubuntu-latest
             build-type: android
             id: android
@@ -48,7 +50,7 @@ jobs:
         if: matrix.build-type != 'android'
 
       - name: Install dependencies (ubuntu only)
-        if: matrix.platform == 'ubuntu-latest' && matrix.build-type == 'linux-desktop'
+        if: matrix.platform == 'ubuntu-latest' && matrix.build-type == 'desktop'
         run: |
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
@@ -80,7 +82,7 @@ jobs:
         run: npm install
 
       - name: Build Tauri app (Desktop)
-        if: matrix.build-type != 'android'
+        if: matrix.build-type == 'desktop'
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
