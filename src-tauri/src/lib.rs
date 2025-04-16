@@ -20,8 +20,9 @@ fn save_private_key(public_key: &str, private_key: &str) -> KeyResponse {
         Ok(entry) => entry,
         Err(err) => return KeyResponse {
             success: false,
-            public_key: public_key,
             message: format!("Failed to create keyring entry: {}", err),
+            public_key: Some(public_key.to_string()),
+            private_key: None,
         },
     };
     
@@ -29,36 +30,53 @@ fn save_private_key(public_key: &str, private_key: &str) -> KeyResponse {
     match entry.set_password(private_key) {
         Ok(_) => KeyResponse {
             success: true,
-            public_key: public_key,
             message: format!("Private key for {} successfully stored", public_key),
+            public_key: Some(public_key.to_string()),
+            private_key: None,
         },
         Err(err) => KeyResponse {
             success: false,
-            public_key: public_key,
             message: format!("Failed to store private key: {}", err),
+            public_key: Some(public_key.to_string()),
+            private_key: None,
         },
     }
 }
 
 #[tauri::command]
-fn get_private_key(public_key: &str) -> String {
+fn get_private_key(public_key: &str) -> KeyResponse {
     // Define service and username for the keyring entry
     let service = "nostria-signer";
     
     // Create a keyring entry
     let entry = match Entry::new(service, public_key) {
         Ok(entry) => entry,
-        Err(err) => return format!("Failed to create keyring entry: {}", err),
+        Err(err) => return KeyResponse {
+            success: false,
+            message: format!("Failed to create keyring entry: {}", err),
+            public_key: Some(public_key.to_string()),
+            private_key: None,
+        },
     };
     
     // Retrieve the private key
     match entry.get_password() {
         Ok(retrieved_key) => {
-           retrieved_key
+            KeyResponse {
+                success: true,
+                message: "Private key retrieved successfully".to_string(),
+                public_key: Some(public_key.to_string()),
+                private_key: Some(retrieved_key),
+            }
         },
         Err(err) => {
             // Handle any error during retrieval
-            format!("Hello, {}! Failed to retrieve private key: {}", public_key, err)
+            KeyResponse {
+                success: false,
+                message: format!("Failed to retrieve private key: {}", err),
+                public_key: Some(public_key.to_string()),
+                private_key: None,
+            }
         }
     }
 }

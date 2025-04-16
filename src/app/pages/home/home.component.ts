@@ -52,27 +52,6 @@ export class HomeComponent {
     this.toastService.show('Signer account generated successfully', 'success');
   }
 
-  async verifyStorage() {
-    console.log('Attempting to verify OS device secure storage...');
-
-    let privateKey = generateSecretKey();
-    let publicKeyHex = getPublicKey(privateKey);
-    let privateKeyHex = bytesToHex(privateKey);
-
-    invoke<string>("save_private_key", { publicKey: publicKeyHex, privateKey: privateKeyHex }).then((result: any) => {
-      if (!result.success) {
-        alert('Failed to use secure key storage:' + result.message);
-      }
-      
-      alert(result);
-      console.log(result);
-    });
-
-    // invoke<string>("get_private_key", { publicKey: publicKeyHex }).then((text) => {
-    //   alert(text);
-    // });
-  }
-
   toggleImportView(): void {
     this.showImport.update(value => !value);
     this.importError.set(null);
