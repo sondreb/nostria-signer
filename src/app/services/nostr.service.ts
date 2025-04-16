@@ -606,24 +606,34 @@ export class NostrService {
         
         // For each key, try to get the private key from secure storage
         for (const keyMeta of storedKeys) {
-          // Try to get private key from secure storage
-          const privateKey = await this.tauriService.getPrivateKey(keyMeta.publicKey);
-          
-          if (privateKey) {
-            // If we got the key from secure storage, use it
-            validKeys.push({
-              publicKey: keyMeta.publicKey,
-              privateKey
-            });
-          } else if (keyMeta.privateKey) {
-            // If not found in secure storage but available in localStorage
-            validKeys.push({
-              publicKey: keyMeta.publicKey,
-              privateKey: keyMeta.privateKey
-            });
+          if (this.tauriService.useBrowserStorage) {
+            // If using browser storage, just use the keys as they are
+            if (keyMeta.privateKey) {
+              validKeys.push({
+                publicKey: keyMeta.publicKey,
+                privateKey: keyMeta.privateKey
+              });
+            }
+          } else {
+            // Try to get private key from secure storage
+            const privateKey = await this.tauriService.getPrivateKey(keyMeta.publicKey);
             
-            // Try to store it securely for future use
-            await this.tauriService.savePrivateKey(keyMeta.publicKey, keyMeta.privateKey);
+            if (privateKey) {
+              // If we got the key from secure storage, use it
+              validKeys.push({
+                publicKey: keyMeta.publicKey,
+                privateKey
+              });
+            } else if (keyMeta.privateKey) {
+              // If not found in secure storage but available in localStorage
+              validKeys.push({
+                publicKey: keyMeta.publicKey,
+                privateKey: keyMeta.privateKey
+              });
+              
+              // Try to store it securely for future use
+              await this.tauriService.savePrivateKey(keyMeta.publicKey, keyMeta.privateKey);
+            }
           }
         }
         
@@ -644,22 +654,31 @@ export class NostrService {
       try {
         const signerKey = JSON.parse(signerKeyString);
         
-        // Try to get the private key from secure storage first
-        const privateKey = await this.tauriService.getPrivateKey(signerKey.publicKey);
-        
-        if (privateKey) {
-          // If found in secure storage, use it
-          this.account.set({
-            ...signerKey,
-            privateKey
-          });
-        } else if (signerKey.privateKey) {
-          // If available in localStorage, use it and try to store securely
-          this.account.set(signerKey);
-          await this.tauriService.savePrivateKey(signerKey.publicKey, signerKey.privateKey);
+        if (this.tauriService.useBrowserStorage) {
+          // If using browser storage, just use the key as it is
+          if (signerKey.privateKey) {
+            this.account.set(signerKey);
+          } else {
+            this.account.set(null);
+          }
         } else {
-          // No private key available
-          this.account.set(null);
+          // Try to get the private key from secure storage first
+          const privateKey = await this.tauriService.getPrivateKey(signerKey.publicKey);
+          
+          if (privateKey) {
+            // If found in secure storage, use it
+            this.account.set({
+              ...signerKey,
+              privateKey
+            });
+          } else if (signerKey.privateKey) {
+            // If available in localStorage, use it and try to store securely
+            this.account.set(signerKey);
+            await this.tauriService.savePrivateKey(signerKey.publicKey, signerKey.privateKey);
+          } else {
+            // No private key available
+            this.account.set(null);
+          }
         }
       } catch (e) {
         console.error('Error parsing stored signer key:', e);

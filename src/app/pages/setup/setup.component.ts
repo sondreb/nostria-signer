@@ -392,7 +392,10 @@ export class SetupComponent {
 
   async checkSecureStorage(): Promise<void> {
     // Simply set the secure storage status based on the TauriService
-    this.isSecureStorage.set(!this.tauriService.useBrowserStorage);
+    // Wait a short time to ensure TauriService initialization has a chance to complete
+    setTimeout(() => {
+      this.isSecureStorage.set(!this.tauriService.useBrowserStorage);
+    }, 100);
   }
 
   getStorageSecurityMessage(): string {
