@@ -2,7 +2,7 @@
 name = "nostria-signer"
 version = "0.1.6"
 description = "Nostria Signer - Remote Signer for Nostr"
-authors = ["you"]
+authors = ["brainbox.no"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
