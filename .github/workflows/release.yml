@@ -8,7 +8,6 @@ on:
         type: boolean
         default: false
 
-# Add permissions needed for creating releases
 permissions:
   contents: write
   packages: read
@@ -43,7 +42,7 @@ jobs:
         run: |
           echo VERSION=$(npm run get-version --silent) >> $GITHUB_ENV
         shell: bash
-    
+
       - name: Install Rust (stable)
         uses: dtolnay/rust-toolchain@stable
         if: matrix.build-type != 'android'
@@ -54,7 +53,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
-      # Android specific setup
       - name: Setup Java
         if: matrix.build-type == 'android'
         uses: actions/setup-java@v3
@@ -92,88 +90,41 @@ jobs:
           releaseDraft: true
           prerelease: ${{ github.event.inputs.prerelease }}
 
-      - name: Setup Android keystore
-        if: matrix.build-type == 'android'
-        run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android.keystore
-          echo "KEYSTORE_PATH=$(pwd)/android.keystore" >> $GITHUB_ENV
-        shell: bash
-
-      # Create a dedicated directory for mobile configurations
-      - name: Create mobile config directory
-        if: matrix.build-type == 'android'
-        run: |
-          mkdir -p src-tauri/gen/android
-        shell: bash
-
-      # Create the proper key.properties file in the correct location
-      - name: Create key.properties for Android
-        if: matrix.build-type == 'android'
-        run: |
-          cat > src-tauri/gen/android/key.properties << EOF
-          storeFile=${{ env.KEYSTORE_PATH }}
-          storePassword=${{ secrets.KEYSTORE_PASSWORD }}
-          keyAlias=${{ secrets.KEY_ALIAS }}
-          keyPassword=${{ secrets.KEY_PASSWORD }}
-          EOF
-        shell: bash
-
-      # Create the gradle.properties file with signing configuration
-      - name: Configure Android signing
-        if: matrix.build-type == 'android'
-        run: |
-          mkdir -p ~/.gradle
-          cat > ~/.gradle/gradle.properties << EOF
-          RELEASE_STORE_FILE=${{ env.KEYSTORE_PATH }}
-          RELEASE_STORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}
-          RELEASE_KEY_ALIAS=${{ secrets.KEY_ALIAS }}
-          RELEASE_KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}
-          EOF
-        shell: bash
-
-      # Create mobile specific Tauri config
-      - name: Configure mobile.json for Android
-        if: matrix.build-type == 'android'
-        run: |
-          cat > src-tauri/gen/android/mobile.json << EOF
-          {
-            "app": {
-              "bundleIdentifier": "app.nostria.signer"
-            },
-            "build": {
-              "beforeBuildCommand": "npm run build",
-              "frontendDist": "../dist/app/browser"
-            },
-            "android": {
-              "signing": {
-                "keystore": "${{ env.KEYSTORE_PATH }}",
-                "keystorePassword": "${{ secrets.KEYSTORE_PASSWORD }}",
-                "keyAlias": "${{ secrets.KEY_ALIAS }}",
-                "keyPassword": "${{ secrets.KEY_PASSWORD }}"
-              }
-            }
-          }
-          EOF
-        shell: bash
-
       - name: Build Android app
         if: matrix.build-type == 'android'
         run: |
-          npm run tauri android build -- --release
+          npm run tauri android build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NDK_HOME: ${{ env.NDK_HOME }}
-          # Pass these as environment variables for Tauri v2
-          TAURI_SIGNING_STORE_FILE: ${{ env.KEYSTORE_PATH }}
-          TAURI_SIGNING_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          TAURI_SIGNING_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          TAURI_SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Decode keystore
+        if: matrix.build-type == 'android'
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > my-release-key.keystore
+
+      - name: Sign APK
+        if: matrix.build-type == 'android'
+        run: |
+          build_tools="$ANDROID_SDK_ROOT/build-tools/34.0.0"
+          unsigned_apk="src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk"
+          signed_apk="src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-signed.apk"
+
+          "$build_tools/apksigner" sign \
+            --ks my-release-key.keystore \
+            --ks-pass pass:${{ secrets.KEYSTORE_PASSWORD }} \
+            --key-pass pass:${{ secrets.KEY_PASSWORD }} \
+            --ks-key-alias ${{ secrets.KEY_ALIAS }} \
+            --out "$signed_apk" \
+            "$unsigned_apk"
+
+          echo "SIGNED_APK=$signed_apk" >> $GITHUB_ENV
 
       - name: Rename Android artifacts
         if: matrix.build-type == 'android'
         run: |
           mkdir -p renamed
-          find src-tauri/gen/android/app/build/outputs/apk/universal/release -name "*.apk" -exec cp {} renamed/nostria-signer_${{ env.VERSION }}.apk \;
+          cp "$SIGNED_APK" renamed/nostria-signer_${{ env.VERSION }}.apk
           find src-tauri/gen/android/app/build/outputs/bundle/universalRelease -name "*.aab" -exec cp {} renamed/nostria-signer_${{ env.VERSION }}.aab \;
         shell: bash
 
