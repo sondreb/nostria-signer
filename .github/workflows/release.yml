@@ -104,9 +104,8 @@ jobs:
           draft: true
           prerelease: ${{ github.event.inputs.prerelease }}
           files: |
-            src-tauri/gen/android/app/build/outputs/apk/debug/*.apk
-            src-tauri/gen/android/app/build/outputs/apk/release/*.apk
-            src-tauri/gen/android/app/build/outputs/bundle/release/*.aab
+            src-tauri/gen/android/app/build/outputs/apk/universal/release/*.apk
+            src-tauri/gen/android/app/build/outputs/bundle/universalRelease/*.aab
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
