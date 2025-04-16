@@ -608,7 +608,7 @@ export class NostrService {
         
         // For each key, try to get the private key from secure storage
         for (const keyMeta of storedKeys) {
-          if (this.tauriService.useBrowserStorage) {
+          if (this.tauriService.useBrowserStorage()) {
             // If using browser storage, just use the keys as they are
             if (keyMeta.privateKey) {
               validKeys.push({
@@ -656,7 +656,7 @@ export class NostrService {
       try {
         const signerKey = JSON.parse(signerKeyString);
         
-        if (this.tauriService.useBrowserStorage) {
+        if (this.tauriService.useBrowserStorage()) {
           // If using browser storage, just use the key as it is
           if (signerKey.privateKey) {
             this.account.set(signerKey);

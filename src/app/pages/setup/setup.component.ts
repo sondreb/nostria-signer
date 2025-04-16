@@ -69,9 +69,6 @@ export class SetupComponent {
         }
       }
     });
-
-    // Get storage security status from Tauri service
-    this.checkSecureStorage();
   }
 
   ngOnInit() {
@@ -386,14 +383,6 @@ export class SetupComponent {
   resetLogFilters() {
     this.logFilter.set(undefined);
     this.logPubkeyFilter.set(undefined);
-  }
-
-  async checkSecureStorage(): Promise<void> {
-    // Simply set the secure storage status based on the TauriService
-    // Wait a short time to ensure TauriService initialization has a chance to complete
-    setTimeout(() => {
-      this.isSecureStorage.set(!this.tauriService.useBrowserStorage);
-    }, 100);
   }
 
   getStorageSecurityMessage(): string {
