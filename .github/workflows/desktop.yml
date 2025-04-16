@@ -18,7 +18,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [macos-latest, ubuntu-latest, windows-latest]
+        platform: [macos-latest, ubuntu-latest, windows-latest, ubuntu-latest]
+        include:
+          - platform: ubuntu-latest
+            build-type: android
+            id: android
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -38,17 +42,36 @@ jobs:
     
       - name: Install Rust (stable)
         uses: dtolnay/rust-toolchain@stable
+        if: matrix.build-type != 'android'
 
       - name: Install dependencies (ubuntu only)
-        if: matrix.platform == 'ubuntu-latest'
+        if: matrix.platform == 'ubuntu-latest' && matrix.build-type != 'android'
         run: |
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
+      # Android specific setup
+      - name: Setup Java
+        if: matrix.build-type == 'android'
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: 17
+
+      - name: Setup Android SDK
+        if: matrix.build-type == 'android'
+        uses: android-actions/setup-android@v2
+
+      - name: Install Rust targets for Android
+        if: matrix.build-type == 'android'
+        run: |
+          rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android i686-linux-android
+
       - name: Install dependencies
         run: npm install
 
-      - name: Build Tauri app
+      - name: Build Tauri app (Desktop)
+        if: matrix.build-type != 'android'
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -58,6 +81,27 @@ jobs:
           releaseBody: "See the assets to download this version and install."
           releaseDraft: true
           prerelease: ${{ github.event.inputs.prerelease }}
+
+      - name: Build Android app
+        if: matrix.build-type == 'android'
+        run: |
+          npm run tauri android build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Android artifacts to release
+        if: matrix.build-type == 'android'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ env.VERSION }}
+          draft: true
+          prerelease: ${{ github.event.inputs.prerelease }}
+          files: |
+            src-tauri/gen/android/app/build/outputs/apk/debug/*.apk
+            src-tauri/gen/android/app/build/outputs/apk/release/*.apk
+            src-tauri/gen/android/app/build/outputs/bundle/release/*.aab
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # - name: Upload artifacts
       #   uses: actions/upload-artifact@v4
