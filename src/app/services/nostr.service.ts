@@ -8,6 +8,7 @@ import { kinds, nip19, SimplePool } from 'nostr-tools';
 import { v2 } from 'nostr-tools/nip44';
 import { LogService, LogType } from './log.service';
 import { decrypt, encrypt } from 'nostr-tools/nip04';
+import { TauriService } from './tauri.service';
 
 // Constants for localStorage keys
 export const STORAGE_KEYS = {
@@ -38,6 +39,7 @@ export interface ClientActivation {
 })
 export class NostrService {
   private router = inject(Router);
+  private tauriService = inject(TauriService);
 
   relays = ['wss://relay.angor.io/'];
 
@@ -56,8 +58,14 @@ export class NostrService {
   constructor(
     private logService: LogService
   ) {
+    // Initialize the app
+    this.initialize();
+  }
+
+  // Initialize the app asynchronously
+  private async initialize(): Promise<void> {
     // Load the signer key
-    this.loadSignerKey();
+    await this.loadSignerKey();
 
     // Load saved relays if they exist
     this.loadRelays();
@@ -65,24 +73,8 @@ export class NostrService {
     // Load client activations
     this.loadClientActivations();
 
-    const keysStorage = localStorage.getItem(STORAGE_KEYS.SIGNER_KEYS);
-
-    if (keysStorage) {
-      try {
-        const storedKeys = JSON.parse(keysStorage);
-        // Only keep the required properties for each key
-        const validKeys = storedKeys.map((key: any) => ({
-          publicKey: key.publicKey,
-          privateKey: key.privateKey
-        }));
-        this.keys.set(validKeys);
-      } catch (e) {
-        console.error('Error parsing stored keys:', e);
-        this.keys.set([]);
-      }
-    } else {
-      this.keys.set([]);
-    }
+    // Load client keys
+    await this.loadClientKeys();
 
     this.connect();
   }
@@ -602,48 +594,95 @@ export class NostrService {
     return permissions.includes(permission);
   }
 
-  // Load the signer key from local storage
-  private loadSignerKey(): void {
+  // Load client keys from localStorage and secure storage
+  private async loadClientKeys(): Promise<void> {
+    const keysStorage = localStorage.getItem(STORAGE_KEYS.SIGNER_KEYS);
+    
+    if (keysStorage) {
+      try {
+        // Parse stored keys
+        const storedKeys = JSON.parse(keysStorage);
+        const validKeys: NostrAccount[] = [];
+        
+        // For each key, try to get the private key from secure storage
+        for (const keyMeta of storedKeys) {
+          // Try to get private key from secure storage
+          const privateKey = await this.tauriService.getPrivateKey(keyMeta.publicKey);
+          
+          if (privateKey) {
+            // If we got the key from secure storage, use it
+            validKeys.push({
+              publicKey: keyMeta.publicKey,
+              privateKey
+            });
+          } else if (keyMeta.privateKey) {
+            // If not found in secure storage but available in localStorage
+            validKeys.push({
+              publicKey: keyMeta.publicKey,
+              privateKey: keyMeta.privateKey
+            });
+            
+            // Try to store it securely for future use
+            await this.tauriService.savePrivateKey(keyMeta.publicKey, keyMeta.privateKey);
+          }
+        }
+        
+        this.keys.set(validKeys);
+      } catch (e) {
+        console.error('Error parsing stored keys:', e);
+        this.keys.set([]);
+      }
+    } else {
+      this.keys.set([]);
+    }
+  }
+
+  // Load the signer key from secure storage or local storage
+  private async loadSignerKey(): Promise<void> {
     const signerKeyString = localStorage.getItem(STORAGE_KEYS.SIGNER_KEY);
     if (signerKeyString) {
       try {
         const signerKey = JSON.parse(signerKeyString);
-        this.account.set(signerKey);
+        
+        // Try to get the private key from secure storage first
+        const privateKey = await this.tauriService.getPrivateKey(signerKey.publicKey);
+        
+        if (privateKey) {
+          // If found in secure storage, use it
+          this.account.set({
+            ...signerKey,
+            privateKey
+          });
+        } else if (signerKey.privateKey) {
+          // If available in localStorage, use it and try to store securely
+          this.account.set(signerKey);
+          await this.tauriService.savePrivateKey(signerKey.publicKey, signerKey.privateKey);
+        } else {
+          // No private key available
+          this.account.set(null);
+        }
       } catch (e) {
         console.error('Error parsing stored signer key:', e);
         this.account.set(null);
       }
+    } else {
+      this.account.set(null);
     }
   }
 
-  // Save the signer key to local storage
-  private saveSignerKey(account: NostrAccount): void {
-    localStorage.setItem(STORAGE_KEYS.SIGNER_KEY, JSON.stringify(account));
+  // Save the signer key to localStorage and secure storage if available
+  private async saveSignerKey(account: NostrAccount): Promise<void> {
+    // Try to store private key securely
+    const securelyStored = await this.tauriService.savePrivateKey(account.publicKey, account.privateKey);
+    
+    // Store in localStorage, either with or without privateKey based on secure storage success
+    localStorage.setItem(STORAGE_KEYS.SIGNER_KEY, JSON.stringify(
+      securelyStored ? 
+        { publicKey: account.publicKey, secret: account.secret } : 
+        account
+    ));
+    
     this.account.set(account);
-  }
-
-  // Generate connection URL for a given activation
-  getConnectionUrl(clientActivation: ClientActivation): string {
-    // Get the active signer account's public key (this is used as the remote signer)
-    const signerPublicKey = this.account()?.publicKey;
-
-    if (!signerPublicKey || !clientActivation.secret) {
-      return '';
-    }
-
-    // Format each relay with "relay=" prefix and join with &
-    const relaysParam = this.relays.map(relay => `relay=${relay}`).join('&');
-
-    return `bunker://${signerPublicKey}?${relaysParam}&secret=${clientActivation.secret}`;
-  }
-
-  // Legacy method for backward compatibility
-  getConnectionUrlForAccount(account: NostrAccount): string {
-    // Format each relay with "relay=" prefix and join with &
-    const relaysParam = this.relays.map(relay => `relay=${relay}`).join('&');
-    const signerPublicKey = this.account()?.publicKey || account.publicKey;
-
-    return `bunker://${signerPublicKey}?${relaysParam}&secret=${account.secret}`;
   }
 
   // Generate a new Nostr account
@@ -653,17 +692,32 @@ export class NostrService {
 
       let privateKeyClient = privateKey ?? generateSecretKey();
       let publicKeyClient = getPublicKey(privateKeyClient);
+      const privateKeyHex = bytesToHex(privateKeyClient);
 
       const keyPairClient: NostrAccount = {
         publicKey: publicKeyClient,
-        privateKey: bytesToHex(privateKeyClient)
+        privateKey: privateKeyHex
       };
 
+      // Try to store private key securely
+      const securelyStored = await this.tauriService.savePrivateKey(publicKeyClient, privateKeyHex);
+      
+      // Update in-memory state
       this.keys.update(array => [...array, keyPairClient]);
-      localStorage.setItem(STORAGE_KEYS.SIGNER_KEYS, JSON.stringify(this.keys()));
+      
+      // Save to localStorage, either with or without privateKey based on secure storage success
+      const keysForStorage = this.keys().map(key => {
+        if (securelyStored && key.publicKey === publicKeyClient) {
+          // If this is the key we just generated and it was securely stored, 
+          // don't include privateKey in localStorage
+          return { publicKey: key.publicKey };
+        }
+        return key;
+      });
+      
+      localStorage.setItem(STORAGE_KEYS.SIGNER_KEYS, JSON.stringify(keysForStorage));
 
       // When a new client identity is created, register a placeholder activation
-      // The actual client pubkey will be updated when a real client connects
       this.addClientActivation('pending', publicKeyClient, secret);
     } catch (error) {
       console.error('Error generating Nostr account:', error);
@@ -675,31 +729,21 @@ export class NostrService {
       let privateKey = generateSecretKey();
       let publicKey = getPublicKey(privateKey);
       const secret = uuidv4();
+      const privateKeyHex = bytesToHex(privateKey);
 
       const keyPair: NostrAccount = {
         publicKey,
-        privateKey: bytesToHex(privateKey)
+        privateKey: privateKeyHex,
+        secret
       };
 
       // Save as signer key
-      this.saveSignerKey(keyPair);
+      await this.saveSignerKey(keyPair);
 
-      let privateKeyClient = generateSecretKey();
-      let publicKeyClient = getPublicKey(privateKeyClient);
+      // Generate client account
+      await this.generateAccount();
 
-      const keyPairClient: NostrAccount = {
-        publicKey: publicKeyClient,
-        privateKey: bytesToHex(privateKeyClient)
-      };
-
-      this.keys.update(array => [...array, keyPairClient]);
-      localStorage.setItem(STORAGE_KEYS.SIGNER_KEYS, JSON.stringify(this.keys()));
-
-      // When a new client identity is created, register a placeholder activation
-      // The actual client pubkey will be updated when a real client connects
-      this.addClientActivation('pending', publicKeyClient, secret);
-
-      // Connect to relays after generating signer.
+      // Connect to relays after generating signer
       this.connect();
 
       // Navigate to the setup page to display the connection URL
@@ -732,18 +776,19 @@ export class NostrService {
       }
 
       const publicKey = getPublicKey(privateKeyBytes);
+      const privateKeyHex = bytesToHex(privateKeyBytes);
 
       const keyPair: NostrAccount = {
         publicKey,
-        privateKey: bytesToHex(privateKeyBytes)
+        privateKey: privateKeyHex
       };
 
-      this.saveSignerKey(keyPair);
+      await this.saveSignerKey(keyPair);
 
-      // 
+      // Generate a client account 
       await this.generateAccount();
 
-      // Make sure we connect after importing signer identity.
+      // Make sure we connect after importing signer identity
       this.connect();
 
       this.router.navigate(['/setup']);
@@ -776,17 +821,6 @@ export class NostrService {
         }
       }
 
-      // const publicKey = getPublicKey(privateKeyBytes);
-
-      // const secret = uuidv4();
-
-      // const keyPair: NostrAccount = {
-      //   publicKey,
-      //   privateKey: bytesToHex(privateKeyBytes),
-      //   secret
-      // };
-
-      // this.saveSignerKey(keyPair);
       await this.generateAccount(privateKeyBytes);
       return true;
     } catch (error) {
@@ -800,7 +834,17 @@ export class NostrService {
   }
 
   // Reset all accounts
-  reset(): void {
+  async reset(): Promise<void> {
+    // Try to delete private keys from secure storage
+    for (const key of this.keys()) {
+      await this.tauriService.deletePrivateKey(key.publicKey);
+    }
+    
+    if (this.account()) {
+      await this.tauriService.deletePrivateKey(this.account()!.publicKey);
+    }
+    
+    // Clear in-memory state and localStorage
     this.keys.set([]);
     this.account.set(null);
     this.clientActivations.set([]);
@@ -812,8 +856,14 @@ export class NostrService {
   }
 
   // Delete a specific key by publicKey
-  deleteKey(publicKey: string): void {
+  async deleteKey(publicKey: string): Promise<void> {
+    // Try to remove from secure storage
+    await this.tauriService.deletePrivateKey(publicKey);
+    
+    // Update in-memory state
     this.keys.update(keys => keys.filter(key => key.publicKey !== publicKey));
+    
+    // Update localStorage
     localStorage.setItem(STORAGE_KEYS.SIGNER_KEYS, JSON.stringify(this.keys()));
 
     // Also delete all activations for this key
@@ -856,5 +906,29 @@ export class NostrService {
       }
     }
     return key; // Return the original if it's already npub or conversion fails
+  }
+
+  // Generate connection URL for a given activation
+  getConnectionUrl(clientActivation: ClientActivation): string {
+    // Get the active signer account's public key (this is used as the remote signer)
+    const signerPublicKey = this.account()?.publicKey;
+
+    if (!signerPublicKey || !clientActivation.secret) {
+      return '';
+    }
+
+    // Format each relay with "relay=" prefix and join with &
+    const relaysParam = this.relays.map(relay => `relay=${relay}`).join('&');
+
+    return `bunker://${signerPublicKey}?${relaysParam}&secret=${clientActivation.secret}`;
+  }
+
+  // Legacy method for backward compatibility
+  getConnectionUrlForAccount(account: NostrAccount): string {
+    // Format each relay with "relay=" prefix and join with &
+    const relaysParam = this.relays.map(relay => `relay=${relay}`).join('&');
+    const signerPublicKey = this.account()?.publicKey || account.publicKey;
+
+    return `bunker://${signerPublicKey}?${relaysParam}&secret=${account.secret}`;
   }
 }
