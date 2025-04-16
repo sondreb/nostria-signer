@@ -14,9 +14,10 @@ struct KeyResponse {
 fn save_private_key(public_key: &str, private_key: &str) -> KeyResponse {
     // Define service and username for the keyring entry
     let service = "nostria-signer";
+    let username = format!("{}-{}", service, public_key); // Fixed string concatenation
     
     // Create a keyring entry
-    let entry = match Entry::new(service, public_key) {
+    let entry = match Entry::new(service, &username) {
         Ok(entry) => entry,
         Err(err) => return KeyResponse {
             success: false,
@@ -47,9 +48,10 @@ fn save_private_key(public_key: &str, private_key: &str) -> KeyResponse {
 fn get_private_key(public_key: &str) -> KeyResponse {
     // Define service and username for the keyring entry
     let service = "nostria-signer";
+    let username = format!("{}-{}", service, public_key); // Fixed string concatenation
     
     // Create a keyring entry
-    let entry = match Entry::new(service, public_key) {
+    let entry = match Entry::new(service, &username) {
         Ok(entry) => entry,
         Err(err) => return KeyResponse {
             success: false,
