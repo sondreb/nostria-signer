@@ -27,7 +27,6 @@ jobs:
             build-type: desktop
           - platform: ubuntu-latest
             build-type: android
-            id: android
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -101,6 +100,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NDK_HOME: ${{ env.NDK_HOME }}
 
+      - name: Rename Android artifacts
+        if: matrix.build-type == 'android'
+        run: |
+          mkdir -p renamed
+          find src-tauri/gen/android/app/build/outputs/apk/universal/release -name "*.apk" -exec cp {} renamed/nostria-signer_${{ env.VERSION }}.apk \;
+          find src-tauri/gen/android/app/build/outputs/bundle/universalRelease -name "*.aab" -exec cp {} renamed/nostria-signer_${{ env.VERSION }}.aab \;
+        shell: bash
+
       - name: Upload Android artifacts to release
         if: matrix.build-type == 'android'
         uses: softprops/action-gh-release@v1
@@ -109,14 +116,7 @@ jobs:
           draft: true
           prerelease: ${{ github.event.inputs.prerelease }}
           files: |
-            src-tauri/gen/android/app/build/outputs/apk/universal/release/*.apk
-            src-tauri/gen/android/app/build/outputs/bundle/universalRelease/*.aab
+            renamed/nostria-signer_${{ env.VERSION }}.apk
+            renamed/nostria-signer_${{ env.VERSION }}.aab
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # - name: Upload artifacts
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: artifacts-${{ matrix.platform }}
-      #     path: |
-      #       target/release/bundle/
