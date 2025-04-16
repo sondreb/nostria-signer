@@ -4,11 +4,12 @@ import { Router } from '@angular/router';
 import { NostrService } from '../../services/nostr.service';
 import { ToastService } from '../../services/toast.service';
 import { LogService, LogType } from '../../services/log.service';
+import { ThemeSwitcherComponent } from '../../components/theme-switcher/theme-switcher.component';
 
 @Component({
   selector: 'app-reset',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ThemeSwitcherComponent],
   templateUrl: './reset.component.html',
   styleUrls: ['./reset.component.css']
 })
