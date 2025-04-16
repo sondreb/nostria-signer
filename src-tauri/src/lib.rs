@@ -1,25 +1,43 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 use keyring::Entry;
+use serde::Serialize;
+
+#[derive(Serialize)]
+struct KeyResponse {
+    success: bool,
+    message: String,
+    public_key: Option<String>, // Optional field for public key
+    private_key: Option<String>, // Optional field for private key
+}
 
 #[tauri::command]
-fn save_private_key(public_key: &str, private_key: &str) -> String {
+fn save_private_key(public_key: &str, private_key: &str) -> KeyResponse {
     // Define service and username for the keyring entry
     let service = "nostria-signer";
     
     // Create a keyring entry
     let entry = match Entry::new(service, public_key) {
         Ok(entry) => entry,
-        Err(err) => return format!("Failed to create keyring entry: {}", err),
+        Err(err) => return KeyResponse {
+            success: false,
+            public_key: public_key,
+            message: format!("Failed to create keyring entry: {}", err),
+        },
     };
     
     // Store the private key
     match entry.set_password(private_key) {
-        Ok(_) => (),
-        Err(err) => return format!("Failed to store private key: {}", err),
-    };
-    
-    // Return a success message
-    format!("Private key for {} successfully stored", public_key)
+        Ok(_) => KeyResponse {
+            success: true,
+            public_key: public_key,
+            message: format!("Private key for {} successfully stored", public_key),
+        },
+        Err(err) => KeyResponse {
+            success: false,
+            public_key: public_key,
+            message: format!("Failed to store private key: {}", err),
+        },
+    }
 }
 
 #[tauri::command]
@@ -49,8 +67,7 @@ fn get_private_key(public_key: &str) -> String {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![save_private_key])
-        .invoke_handler(tauri::generate_handler![get_private_key])
+        .invoke_handler(tauri::generate_handler![save_private_key, get_private_key])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

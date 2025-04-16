@@ -59,8 +59,13 @@ export class HomeComponent {
     let publicKeyHex = getPublicKey(privateKey);
     let privateKeyHex = bytesToHex(privateKey);
 
-    invoke<string>("save_private_key", { publicKey: publicKeyHex, privateKey: privateKeyHex }).then((text) => {
-      alert(text);
+    invoke<string>("save_private_key", { publicKey: publicKeyHex, privateKey: privateKeyHex }).then((result: any) => {
+      if (!result.success) {
+        alert('Failed to use secure key storage:' + result.message);
+      }
+      
+      alert(result);
+      console.log(result);
     });
 
     // invoke<string>("get_private_key", { publicKey: publicKeyHex }).then((text) => {
