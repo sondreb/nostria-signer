@@ -451,7 +451,6 @@ export class NostrService {
 
           const verifiedEvent = finalizeEvent(eventToSign, hexToBytes(clientPrivateKey!));
 
-          // TODO: Implement actual event signing
           console.log('Request to sign event:', eventToSign);
           this.sendResponse(clientActivation!, evt.pubkey, requestData.id, JSON.stringify(verifiedEvent), null);
           break;
@@ -474,7 +473,6 @@ export class NostrService {
 
           let result: string | undefined = undefined;
 
-          // TODO: Implement NIP-04 encryption/decryption
           console.log(`Request for ${requestData.method}:`, requestData.params);
 
           const clientKeyPair = this.getClientKey(clientActivation!.pubkey)!;
@@ -511,9 +509,26 @@ export class NostrService {
             evt.pubkey
           );
 
-          // TODO: Implement NIP-44 encryption/decryption
+          let result: string | undefined = undefined;
+          const clientKeyPair = this.getClientKey(clientActivation!.pubkey)!;
+          const clientPrivateKey = clientKeyPair.privateKey;
+
+          if (requestData.method === 'nip44_encrypt') {
+            const [pubkey, plaintext] = requestData.params;
+
+            const convKey = v2.utils.getConversationKey(privateKey, pubkey);
+            const cipher = v2.encrypt(plaintext, convKey);
+            result = cipher;
+          } else if (requestData.method === 'nip44_decrypt') {
+            const [pubkey, cipher] = requestData.params;
+
+            const convKey = v2.utils.getConversationKey(privateKey, pubkey);
+            const plaintext = v2.decrypt(cipher, convKey);
+            result = plaintext;
+          }
+
           console.log(`Request for ${requestData.method}:`, requestData.params);
-          this.sendResponse(clientActivation!, evt.pubkey, requestData.id, null, { code: 501, message: `${requestData.method} not implemented yet` });
+          this.sendResponse(clientActivation!, evt.pubkey, requestData.id, result);
           break;
         }
 
