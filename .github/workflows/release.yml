@@ -138,7 +138,7 @@ jobs:
           cat > src-tauri/gen/android/mobile.json << EOF
           {
             "app": {
-              "bundleIdentifier": "no.brainbox.nostria-signer"
+              "bundleIdentifier": "app.nostria.signer"
             },
             "build": {
               "beforeBuildCommand": "npm run build",

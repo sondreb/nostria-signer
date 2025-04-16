@@ -1,6 +1,6 @@
 {
   "app": {
-    "bundleId": "no.brainbox.nostria-signer",
+    "bundleId": "app.nostria.signer",
     "icon": "icons/128x128@2x.png",
     "android": {
       "minSdkVersion": 24
@@ -19,6 +19,6 @@
     "frontendDist": "../dist/app/browser"
   },
   "bundle": {
-    "identifier": "no.brainbox.nostria-signer"
+    "identifier": "app.nostria.signer"
   }
 }

@@ -13,5 +13,5 @@ import { ToastComponent } from './components/toast/toast.component';
   `,
 })
 export class AppComponent {
-  title = 'nostria-signer';
+  title = 'Nostria Signer';
 }
