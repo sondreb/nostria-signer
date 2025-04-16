@@ -101,7 +101,8 @@ jobs:
       - name: Decode keystore
         if: matrix.build-type == 'android'
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > my-release-key.keystore
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > my-release-key.keystore
+        shell: bash
 
       - name: Sign APK
         if: matrix.build-type == 'android'
