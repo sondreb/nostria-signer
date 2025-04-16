@@ -11,7 +11,7 @@ export class TauriService {
     private isRunningInTauri = isTauri();
 
     constructor() {
-        console.log('IS TUARI:', this.isRunningInTauri);
+        console.log('Nostria Signer in native mode:', this.isRunningInTauri);
 
         if (this.isRunningInTauri) {
             this.useBrowserStorage = false;
@@ -19,7 +19,6 @@ export class TauriService {
     }
 
     async savePrivateKey(publicKey: string, privateKey: string): Promise<boolean> {
-        debugger;
         // If not running in Tauri or already set to use browser storage
         if (this.useBrowserStorage || !this.isRunningInTauri) {
             return false; // Indicate that secure storage wasn't used
