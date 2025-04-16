@@ -1,3 +1,3 @@
-package no.brainbox.nostria_signer
+package app.nostria.signer
 
 class MainActivity : TauriActivity()
