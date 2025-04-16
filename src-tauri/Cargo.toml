@@ -1,6 +1,6 @@
 [package]
 name = "nostria-signer"
-version = "0.1.2"
+version = "0.1.3"
 description = "Nostria Signer - Remote Signer for Nostr"
 authors = ["you"]
 edition = "2021"
