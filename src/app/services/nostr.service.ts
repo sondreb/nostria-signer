@@ -738,6 +738,14 @@ export class NostrService {
       
       localStorage.setItem(STORAGE_KEYS.SIGNER_KEYS, JSON.stringify(keysForStorage));
 
+      // Log the new client key generation
+      this.logService.addEntry(
+        LogType.KEY_GENERATED,
+        `Client key generated`,
+        { publicKey: publicKeyClient },
+        publicKeyClient
+      );
+
       // When a new client identity is created, register a placeholder activation
       this.addClientActivation('pending', publicKeyClient, secret);
     } catch (error) {
@@ -760,6 +768,14 @@ export class NostrService {
 
       // Save as signer key
       await this.saveSignerKey(keyPair);
+      
+      // Log the signer key generation
+      this.logService.addEntry(
+        LogType.KEY_GENERATED,
+        `Signer key generated`,
+        { publicKey },
+        publicKey
+      );
 
       // Generate client account
       await this.generateAccount();
@@ -873,6 +889,7 @@ export class NostrService {
     localStorage.removeItem(STORAGE_KEYS.SIGNER_KEY);
     localStorage.removeItem(STORAGE_KEYS.SIGNER_CLIENTS);
     localStorage.removeItem(STORAGE_KEYS.RELAYS);
+    this.logService.clearLogs();
     this.router.navigate(['/']);
   }
 

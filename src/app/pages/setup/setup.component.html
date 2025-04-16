@@ -151,7 +151,6 @@
       <div class="key-actions">
         <button class="danger" (click)="deleteKey(key.publicKey)">Delete Identity</button>
       </div>
-      <hr class="key-divider">
     </div>
     }
     }
@@ -280,9 +279,7 @@
               @if (entry.pubkey) {
               <div class="log-pubkey">
                 <span class="pubkey-label">Pubkey:</span>
-                <span class="pubkey-value" (click)="setLogPubkeyFilter(entry.pubkey)" title="Filter by this pubkey">
-                  {{ entry.pubkey }}
-                </span>
+                <span class="pubkey-value" (click)="setLogPubkeyFilter(entry.pubkey)" title="Filter by this pubkey">{{ entry.pubkey }}</span>
               </div>
               }
               @if (entry.details) {

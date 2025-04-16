@@ -6,7 +6,8 @@ export enum LogType {
   SIGN_REQUEST = 'sign-request',
   ENCRYPTION = 'encryption',
   CONNECTION = 'connection',
-  ERROR = 'error'
+  ERROR = 'error',
+  KEY_GENERATED = 'key-generated',
 }
 
 export interface LogEntry {
