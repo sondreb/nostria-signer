@@ -1061,6 +1061,66 @@
   }
 }
 
+/* WebLock Notification Styles */
+.weblock-notification {
+  margin-top: 1rem;
+  padding: 1rem 1.5rem;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background-color: var(--info-box-bg);
+  border: 1px solid var(--border-color);
+}
+
+.weblock-notification.active {
+  background-color: #2563eb14;
+  border-color: var(--primary-color);
+}
+
+.wake-lock-toggle {
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.active .wake-lock-toggle {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.active .wake-lock-toggle:hover {
+  background-color: #1d4ed8;
+}
+
+.wake-lock-toggle:not(.active) {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+}
+
+.wake-lock-toggle:not(.active):hover {
+  background-color: var(--copy-bg);
+}
+
+/* Make notification responsive */
+@media (max-width: 768px) {
+  .weblock-notification {
+    flex-direction: column;
+    text-align: center;
+    padding: 1rem;
+  }
+  
+  .notification-icon {
+    margin-bottom: 0.5rem;
+  }
+}
+
 .danger {
   background-color: var(--error-color);
   color: white;

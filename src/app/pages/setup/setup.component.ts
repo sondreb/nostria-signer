@@ -13,6 +13,7 @@ import { LogService, LogType } from '../../services/log.service';
 import { TauriService } from '../../services/tauri.service';
 import QRCode from 'qrcode';
 import { Router } from '@angular/router';
+import { WebLockService } from '../../services/web-lock.service';
 
 @Component({
   selector: 'app-setup',
@@ -28,6 +29,7 @@ export class SetupComponent {
   private logService = inject(LogService);
   private tauriService = inject(TauriService);
   private router = inject(Router);
+  private webLockService = inject(WebLockService);
 
   keys = this.nostrService.keys;
   account = this.nostrService.account;
@@ -51,6 +53,10 @@ export class SetupComponent {
   logFilter = signal<LogType | string | undefined>(undefined);
   logPubkeyFilter = signal<string | undefined>(undefined);
   isSecureStorage = signal<boolean | null>(null);
+
+  // Add webLock to component properties
+  webLockSupported = this.webLockService.isSupported;
+  webLockActive = this.webLockService.isLocked;
 
   // Get connection status from service
   connectionStatus = this.nostrService.connectionStatus;
@@ -436,6 +442,21 @@ export class SetupComponent {
       case 'connecting': return 'status-connecting';
       case 'disconnected': return 'status-disconnected';
       default: return '';
+    }
+  }
+
+  // Add method to manually toggle WebLock
+  async toggleWebLock(): Promise<void> {
+    if (this.webLockActive()) {
+      await this.webLockService.releaseLock();
+      this.toastService.show('Screen can now sleep', 'info');
+    } else {
+      const success = await this.webLockService.requestLock();
+      if (success) {
+        this.toastService.show('Screen will stay active', 'success');
+      } else {
+        this.toastService.show('Failed to prevent screen from sleeping', 'error');
+      }
     }
   }
 }

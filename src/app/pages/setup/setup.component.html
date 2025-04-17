@@ -402,4 +402,31 @@
       {{ getStorageSecurityMessage() }}
     </div>
   </div>
+
+  <!-- Add WebLock status display and control -->
+  <div class="weblock-notification" [class.active]="webLockActive()">
+    <div class="notification-icon">
+      @if (webLockActive()) {
+        <span>⚡</span>
+      } @else if (webLockSupported) {
+        <span>💤</span>
+      } @else {
+        <span>❌</span>
+      }
+    </div>
+    <div class="notification-message">
+      @if (!webLockSupported) {
+        Wake Lock is not supported in your browser. Screen may turn off when inactive.
+      } @else if (webLockActive()) {
+        Wake Lock active: Screen will stay awake while app is running.
+      } @else {
+        Wake Lock inactive: Screen may turn off when not in use.
+      }
+    </div>
+    @if (webLockSupported) {
+      <button class="wake-lock-toggle" (click)="toggleWebLock()">
+        {{ webLockActive() ? 'Disable' : 'Enable' }}
+      </button>
+    }
+  </div>
 </div>
