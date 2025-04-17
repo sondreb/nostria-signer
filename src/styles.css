@@ -879,3 +879,55 @@ img {
     min-height: 2.5rem;
   }
 }
+
+/* Add connection status styling */
+.connection-status-display {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+  padding: 8px;
+  background-color: var(--secondary-bg-color);
+  border-radius: 5px;
+}
+
+.status-indicator {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.status-connected {
+  background-color: #4CAF50;
+}
+
+.status-connecting {
+  background-color: #FFC107;
+  animation: pulse 1.5s infinite;
+}
+
+.status-disconnected {
+  background-color: #F44336;
+}
+
+.reconnect-button {
+  margin-left: auto;
+  background-color: var(--accent-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.reconnect-button:hover {
+  background-color: var(--accent-hover-color);
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}

@@ -52,6 +52,9 @@ export class SetupComponent {
   logPubkeyFilter = signal<string | undefined>(undefined);
   isSecureStorage = signal<boolean | null>(null);
 
+  // Get connection status from service
+  connectionStatus = this.nostrService.connectionStatus;
+
   constructor() {
     effect(async () => {
       if (this.nostrService.serviceInitialized()) {
@@ -406,6 +409,33 @@ export class SetupComponent {
       return 'Your private keys are being stored securely using native OS secure storage.';
     } else {
       return 'Warning: Your private keys are being stored in browser local storage, which is less secure. For better security, use the desktop app.';
+    }
+  }
+
+  // Manually trigger reconnection
+  reconnectToRelays(): void {
+    this.nostrService.connect();
+    this.toastService.show('Attempting to reconnect to relays...', 'info');
+    this.logService.addEntry(LogType.CONNECTION, 'Manual relay reconnection requested');
+  }
+
+  // Get connection status display text
+  getConnectionStatusText(): string {
+    switch (this.connectionStatus()) {
+      case 'connected': return 'Connected';
+      case 'connecting': return 'Connecting...';
+      case 'disconnected': return 'Disconnected';
+      default: return 'Unknown';
+    }
+  }
+
+  // Get connection status class for styling
+  getConnectionStatusClass(): string {
+    switch (this.connectionStatus()) {
+      case 'connected': return 'status-connected';
+      case 'connecting': return 'status-connecting';
+      case 'disconnected': return 'status-disconnected';
+      default: return '';
     }
   }
 }

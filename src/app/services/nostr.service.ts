@@ -45,6 +45,15 @@ export class NostrService {
 
   relays = ['wss://relay.angor.io/'];
 
+  // Track connection status
+  connectionStatus = signal<'connected' | 'disconnected' | 'connecting'>('disconnected');
+  
+  // Store last connection attempt timestamp
+  private lastConnectionAttempt = signal<number>(0);
+  
+  // Track relay connection health check interval
+  private connectionCheckInterval: any = null;
+
   // Store the Nostr account information
   account = signal<NostrAccount | null>(null);
 
@@ -70,6 +79,8 @@ export class NostrService {
       }
     });
 
+    // Setup visibility change event listener
+    this.setupVisibilityChangeListener();
   }
 
   // Initialize the app asynchronously
@@ -87,6 +98,9 @@ export class NostrService {
     await this.loadClientKeys();
 
     this.connect();
+    
+    // Start connection monitoring
+    this.startConnectionMonitoring();
 
     // Mark this service as initialized
     this.serviceInitialized.set(true);
@@ -110,6 +124,71 @@ export class NostrService {
       this.accountExists.set(false);
       return false;
     }
+  }
+
+  // Setup visibility change listener
+  private setupVisibilityChangeListener(): void {
+    // If we're in a browser environment
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          console.log('App became visible, checking connection status');
+          this.checkAndReconnectIfNeeded();
+        }
+      });
+      
+      // For mobile apps, we can also listen for resume events
+      window.addEventListener('focus', () => {
+        console.log('Window got focus, checking connection status');
+        this.checkAndReconnectIfNeeded();
+      });
+    }
+  }
+
+  // Start monitoring the connection
+  private startConnectionMonitoring(): void {
+    // Clear any existing interval
+    if (this.connectionCheckInterval) {
+      clearInterval(this.connectionCheckInterval);
+    }
+    
+    // Check connection every 30 seconds
+    this.connectionCheckInterval = setInterval(() => {
+      this.checkAndReconnectIfNeeded();
+    }, 30000); // 30 seconds
+  }
+
+  // Check connection status and reconnect if needed
+  private checkAndReconnectIfNeeded(): void {
+    // Only try to reconnect if we're not already connecting and have an account
+    if (this.connectionStatus() !== 'connecting' && this.account()) {
+      // Check if we have pool and if it's connected
+      if (!this.pool || !this.isConnected()) {
+        console.log('Connection appears to be down, attempting to reconnect...');
+        this.logService.addEntry(
+          LogType.CONNECTION,
+          'Connection appears to be down, attempting to reconnect'
+        );
+        
+        // Only reconnect if it's been at least 5 seconds since last attempt
+        // This prevents reconnection storms
+        const now = Date.now();
+        if (now - this.lastConnectionAttempt() > 5000) {
+          this.lastConnectionAttempt.set(now);
+          this.connect();
+        }
+      }
+    }
+  }
+
+  // Check if the pool is currently connected
+  private isConnected(): boolean {
+    // If no pool exists, we're definitely not connected
+    if (!this.pool) return false;
+    
+    // In a real implementation, you might want to add more sophisticated checks
+    // like recent event timestamps or a ping-pong mechanism
+    return this.connectionStatus() === 'connected';
   }
 
   // Load client activations from localStorage
@@ -260,12 +339,16 @@ export class NostrService {
   }
 
   connect() {
+    // Set connecting state
+    this.connectionStatus.set('connecting');
+    
     // Close existing pool if it exists
     if (this.pool) {
       this.pool.close(this.relays);
     }
 
     if (!this.account()) {
+      this.connectionStatus.set('disconnected');
       return;
     }
 
@@ -284,14 +367,27 @@ export class NostrService {
         {
           onevent: (evt) => {
             console.log('Event received', evt);
+            // If we get an event, we're connected
+            this.connectionStatus.set('connected');
             this.processEvent(evt);
           },
 
           onclose: (reasons) => {
             console.log('Pool closed', reasons);
+            this.connectionStatus.set('disconnected');
+            
+            // Attempt to reconnect after a short delay
+            setTimeout(() => {
+              this.checkAndReconnectIfNeeded();
+            }, 5000);
           },
         }
       );
+      
+      // Set connected state - we'll assume it worked for now
+      this.connectionStatus.set('connected');
+    } else {
+      this.connectionStatus.set('disconnected');
     }
 
     console.log('Connected to relays:', this.relays);
@@ -975,5 +1071,19 @@ export class NostrService {
     const signerPublicKey = this.account()?.publicKey || account.publicKey;
 
     return `bunker://${signerPublicKey}?${relaysParam}&secret=${account.secret}`;
+  }
+
+  // Clean up on app exit or destruction
+  cleanup(): void {
+    // Clear the connection check interval
+    if (this.connectionCheckInterval) {
+      clearInterval(this.connectionCheckInterval);
+      this.connectionCheckInterval = null;
+    }
+    
+    // Close pool connections
+    if (this.pool) {
+      this.pool.close(this.relays);
+    }
   }
 }

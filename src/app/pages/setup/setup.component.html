@@ -210,6 +210,12 @@
       <h3>Manage Relays</h3>
       <p>Add or remove relays to connect your signer to the Nostr network</p>
 
+      <div class="connection-status-display">
+        <span class="status-indicator" [ngClass]="getConnectionStatusClass()"></span>
+        <span class="status-text">Status: {{ getConnectionStatusText() }}</span>
+        <button class="reconnect-button" (click)="reconnectToRelays()">Reconnect</button>
+      </div>
+
       <div class="relay-list">
         @for (relay of relays(); track relay) {
         <div class="relay-item">
