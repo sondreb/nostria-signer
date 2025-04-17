@@ -708,8 +708,6 @@ export class NostrService {
     // Try to store private key securely
     await this.tauriService.savePrivateKey(account.publicKey, account.privateKey);
 
-    debugger;
-
     // Store in localStorage, either with or without privateKey based on secure storage success
     localStorage.setItem(STORAGE_KEYS.SIGNER_KEY, JSON.stringify(
       this.tauriService.useBrowserStorage() ?
@@ -742,15 +740,12 @@ export class NostrService {
 
       // Save to localStorage, either with or without privateKey based on secure storage success
       const keysForStorage = this.keys().map(key => {
-        if (this.tauriService.useBrowserStorage() && key.publicKey === publicKeyClient) {
-          // If this is the key we just generated and it was securely stored, 
-          // don't include privateKey in localStorage
-          return { publicKey: key.publicKey };
-        }
-        return key;
+        return this.tauriService.useBrowserStorage()
+          ? key  // When using browser storage, store complete key
+          : { publicKey: key.publicKey }; // When using secure storage, only store publicKey
       });
 
-      localStorage.setItem(STORAGE_KEYS.SIGNER_KEYS, JSON.stringify(this.keys()));
+      localStorage.setItem(STORAGE_KEYS.SIGNER_KEYS, JSON.stringify(keysForStorage));
 
       // Log the new client key generation
       this.logService.addEntry(
@@ -771,16 +766,12 @@ export class NostrService {
     try {
       let privateKey = generateSecretKey();
       let publicKey = getPublicKey(privateKey);
-      const secret = uuidv4();
       const privateKeyHex = bytesToHex(privateKey);
 
       const keyPair: NostrAccount = {
         publicKey,
-        privateKey: privateKeyHex,
-        secret
+        privateKey: privateKeyHex
       };
-
-      debugger;
 
       // Save as signer key
       await this.saveSignerKey(keyPair);

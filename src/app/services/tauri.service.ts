@@ -23,8 +23,6 @@ export class TauriService {
     }
 
     private async initializePlatform() {
-        debugger;
-
         if (this.isRunningInTauri) {
 
             console.log('Platform:', platform());
