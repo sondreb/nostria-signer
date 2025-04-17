@@ -121,6 +121,28 @@ fn delete_private_key(public_key: &str) -> KeyResponse {
     }
 }
 
+// Add wake lock command for mobile platforms
+#[tauri::command]
+fn keep_awake(state: bool) -> bool {
+    #[cfg(target_os = "android")]
+    {
+        if let Some(android_activity) = window.get_main_window().and_then(|w| w.app_handle().android_activity()) {
+            if state {
+                android_activity.acquire_wake_lock("nostria-signer:wake-lock");
+                return true;
+            } else {
+                android_activity.release_wake_lock();
+                return true;
+            }
+        }
+        false
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        false
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -129,7 +151,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             save_private_key,
             get_private_key,
-            delete_private_key
+            delete_private_key,
+            keep_awake
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
