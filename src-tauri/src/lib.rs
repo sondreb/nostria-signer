@@ -149,8 +149,7 @@ pub fn run() {
     {
         let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_os::init())
-        .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_notification::init());
+        .plugin(tauri_plugin_opener::init());
 
         builder = builder.invoke_handler(tauri::generate_handler![
             save_private_key,
@@ -167,19 +166,19 @@ pub fn run() {
     
     #[cfg(not(target_os = "android"))]
     {
-        #[derive(Clone, serde::Serialize)]
-        struct Payload {
-            args: Vec<String>,
-            cwd: String,
-        }
+        // #[derive(Clone, serde::Serialize)]
+        // struct Payload {
+        //     args: Vec<String>,
+        //     cwd: String,
+        // }
 
         let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_os::init())
-        .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
-            println!("{}, {argv:?}, {cwd}", app.package_info().name);
-            app.emit("single-instance", Payload { args: argv, cwd }).unwrap();
-        }))
+        .plugin(tauri_plugin_opener::init());
+        // .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
+        //     println!("{}, {argv:?}, {cwd}", app.package_info().name);
+        //     app.emit("single-instance", Payload { args: argv, cwd }).unwrap();
+        // }))
         // .plugin(tauri_plugin_notification::init());
 
         builder = builder.invoke_handler(tauri::generate_handler![
