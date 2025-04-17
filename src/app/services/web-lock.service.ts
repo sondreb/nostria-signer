@@ -24,7 +24,6 @@ export class WebLockService {
   }
   
   constructor() {
-    debugger;
     if (!this.isSupported) {
       console.warn('Wake Lock API is not supported in this browser');
     }

@@ -182,7 +182,7 @@ pub fn run() {
             println!("{}, {argv:?}, {cwd}", app.package_info().name);
             app.emit("single-instance", Payload { args: argv, cwd }).unwrap();
         }))
-        .plugin(tauri_plugin_notification::init());
+        // .plugin(tauri_plugin_notification::init());
 
         builder = builder.invoke_handler(tauri::generate_handler![
             save_private_key,

@@ -30,5 +30,4 @@ tauri-plugin-single-instance = "2.2.3"
 [target.'cfg(target_os = "android")'.dependencies]
 tauri = { version = "2.5.0", features = [] }
 tauri-plugin-process = "2.2.0"
-tauri-plugin-notification = { version = "2.2.2" }
 

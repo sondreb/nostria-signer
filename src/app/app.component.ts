@@ -35,7 +35,6 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    debugger;
     // Request a web lock to keep the app active in background
     this.initializeWebLock();
 

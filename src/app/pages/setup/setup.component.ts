@@ -14,16 +14,16 @@ import { TauriService } from '../../services/tauri.service';
 import QRCode from 'qrcode';
 import { Router } from '@angular/router';
 import { WebLockService } from '../../services/web-lock.service';
-import {
-  cancelAll,
-  isPermissionGranted,
-  removeAllActive,
-  requestPermission,
-  Schedule,
-  ScheduleEvery,
-  ScheduleInterval,
-  sendNotification
-} from '@tauri-apps/plugin-notification'
+// import {
+//   cancelAll,
+//   isPermissionGranted,
+//   removeAllActive,
+//   requestPermission,
+//   Schedule,
+//   ScheduleEvery,
+//   ScheduleInterval,
+//   sendNotification
+// } from '@tauri-apps/plugin-notification'
 
 @Component({
   selector: 'app-setup',
@@ -119,32 +119,32 @@ export class SetupComponent {
     }
   }
 
-  async checkPermission() {
-    if (!(await isPermissionGranted())) {
-      return (await requestPermission()) === 'granted';
-    }
+  // async checkPermission() {
+  //   if (!(await isPermissionGranted())) {
+  //     return (await requestPermission()) === 'granted';
+  //   }
 
-    return true;
-  }
+  //   return true;
+  // }
 
-  async disableNotification() {
-    cancelAll();
-    removeAllActive();
-  }
+  // async disableNotification() {
+  //   cancelAll();
+  //   removeAllActive();
+  // }
 
-  async enableNotification() {
-    let title = 'Nostria Signer';
-    let body = 'Attempt to keep running in the background.';
+  // async enableNotification() {
+  //   let title = 'Nostria Signer';
+  //   let body = 'Attempt to keep running in the background.';
 
-    if (!(await this.checkPermission())) {
-      return
-    }
+  //   if (!(await this.checkPermission())) {
+  //     return
+  //   }
 
-    // const schedule = Schedule.interval('second', 5);
-    const schedule = Schedule.every(ScheduleEvery.Second, 5, true);
+  //   // const schedule = Schedule.interval('second', 5);
+  //   const schedule = Schedule.every(ScheduleEvery.Second, 5, true);
 
-    sendNotification({ title, body, ongoing: true, schedule: schedule });
-  }
+  //   sendNotification({ title, body, ongoing: true, schedule: schedule });
+  // }
 
   async importKey(): Promise<void> {
     this.importError.set(null);
