@@ -14,6 +14,11 @@ import { TauriService } from '../../services/tauri.service';
 import QRCode from 'qrcode';
 import { Router } from '@angular/router';
 import { WebLockService } from '../../services/web-lock.service';
+import {
+  isPermissionGranted,
+  requestPermission,
+  sendNotification
+} from '@tauri-apps/plugin-notification'
 
 @Component({
   selector: 'app-setup',
@@ -107,6 +112,24 @@ export class SetupComponent {
       this.importError.set(null);
       this.importSuccess.set(false);
     }
+  }
+
+  async checkPermission() {
+    if (!(await isPermissionGranted())) {
+      return (await requestPermission()) === 'granted';
+    }
+
+    return true;
+  }
+
+  async notificationTrigger() {
+    let title = 'Nostria Signer';
+    let body = 'Attempt to keep running in the background.';
+
+    if (!(await this.checkPermission())) {
+      return
+    }
+    sendNotification({ title, body, ongoing: true })
   }
 
   async importKey(): Promise<void> {

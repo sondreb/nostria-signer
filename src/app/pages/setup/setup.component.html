@@ -44,9 +44,9 @@
         <h3>Nostr Private Key:</h3>
         <div class="copy-container">
           @if (isPrivateKeyVisible(key.publicKey)) {
-            <div class="copy-text">{{ key.privateKey }}</div>
+          <div class="copy-text">{{ key.privateKey }}</div>
           } @else {
-            <div class="copy-text masked-key">••••••••••••••••••••••••••••••••••••••••••••••••••••••••</div>
+          <div class="copy-text masked-key">••••••••••••••••••••••••••••••••••••••••••••••••••••••••</div>
           }
           <div class="button-group">
             <button class="action-btn" title="Toggle visibility" (click)="togglePrivateKeyVisibility(key.publicKey)">
@@ -67,7 +67,7 @@
             Generate New Activation
           </button>
         </div>
-        
+
         @if (getActivationsForIdentity(key.publicKey).length > 0) {
         <div class="activations-list">
           @for (activation of getActivationsForIdentity(key.publicKey); track getActivationId(activation)) {
@@ -79,19 +79,20 @@
                 </div>
                 <div class="activation-date">{{ formatDate(activation.activatedDate) }}</div>
               </div>
-              
+
               @if (!isPendingActivation(activation)) {
               <div class="client-pubkey">
                 <span class="key-label">Client:</span>
                 <div class="copy-container">
                   <div class="copy-text">{{ activation.clientPubkey }}</div>
-                  <button class="action-btn" title="Copy to clipboard" (click)="copyToClipboard(activation.clientPubkey)">
+                  <button class="action-btn" title="Copy to clipboard"
+                    (click)="copyToClipboard(activation.clientPubkey)">
                     <span class="action-btn-icon">📋</span> Copy
                   </button>
                 </div>
               </div>
               }
-              
+
               <!-- Show Connection URL only for pending activations -->
               @if (isPendingActivation(activation)) {
               <div class="connection-url">
@@ -102,7 +103,8 @@
                     <button class="action-btn" title="Show QR Code" (click)="showQrCode(activation)">
                       <span class="action-btn-icon">📱</span> QR
                     </button>
-                    <button class="action-btn" title="Copy to clipboard" (click)="copyToClipboard(getConnectionUrl(activation))">
+                    <button class="action-btn" title="Copy to clipboard"
+                      (click)="copyToClipboard(getConnectionUrl(activation))">
                       <span class="action-btn-icon">📋</span> Copy
                     </button>
                   </div>
@@ -110,16 +112,14 @@
                 <div class="connection-hint">Share this URL with your Nostr client to connect</div>
               </div>
               }
-              
+
               <div class="permissions-container">
                 <div class="permissions-label">Permissions</div>
 
                 @if (isEditingPermissions(activation)) {
                 <div class="permissions-edit">
-                  <textarea 
-                    [ngModel]="permissionsInput()[getActivationId(activation)]"
-                    (ngModelChange)="updatePermissionsInput(activation, $event)"
-                    class="permissions-input" 
+                  <textarea [ngModel]="permissionsInput()[getActivationId(activation)]"
+                    (ngModelChange)="updatePermissionsInput(activation, $event)" class="permissions-input"
                     placeholder="E.g., get_public_key,sign_event:0,nip44_encrypt"></textarea>
                   <div class="edit-actions">
                     <button class="action-btn" (click)="savePermissions(activation)">Save</button>
@@ -134,7 +134,7 @@
                 }
               </div>
             </div>
-            
+
             <div class="activation-actions">
               <button class="action-btn action-btn-danger" (click)="deleteActivation(activation)">
                 <span>🗑️</span> Revoke
@@ -254,21 +254,27 @@
           <button class="action-btn" (click)="resetLogFilters()">Reset Filters</button>
         </div>
       </div>
-      
+
       <div class="log-filters">
         <div class="filter-group">
           <label>Filter by type:</label>
           <div class="filter-options">
-            <button class="filter-btn" [class.active]="logFilter() === undefined" (click)="setLogFilter(undefined)">All</button>
-            <button class="filter-btn" [class.active]="logFilter() === 'event-received'" (click)="setLogFilter('event-received')">Events</button>
-            <button class="filter-btn" [class.active]="logFilter() === 'sign-request'" (click)="setLogFilter('sign-request')">Signing</button>
-            <button class="filter-btn" [class.active]="logFilter() === 'encryption'" (click)="setLogFilter('encryption')">Encryption</button>
-            <button class="filter-btn" [class.active]="logFilter() === 'connection'" (click)="setLogFilter('connection')">Connection</button>
-            <button class="filter-btn" [class.active]="logFilter() === 'error'" (click)="setLogFilter('error')">Errors</button>
+            <button class="filter-btn" [class.active]="logFilter() === undefined"
+              (click)="setLogFilter(undefined)">All</button>
+            <button class="filter-btn" [class.active]="logFilter() === 'event-received'"
+              (click)="setLogFilter('event-received')">Events</button>
+            <button class="filter-btn" [class.active]="logFilter() === 'sign-request'"
+              (click)="setLogFilter('sign-request')">Signing</button>
+            <button class="filter-btn" [class.active]="logFilter() === 'encryption'"
+              (click)="setLogFilter('encryption')">Encryption</button>
+            <button class="filter-btn" [class.active]="logFilter() === 'connection'"
+              (click)="setLogFilter('connection')">Connection</button>
+            <button class="filter-btn" [class.active]="logFilter() === 'error'"
+              (click)="setLogFilter('error')">Errors</button>
           </div>
         </div>
       </div>
-      
+
       <div class="log-container">
         @if (getFilteredLogs().length === 0) {
         <div class="empty-log">
@@ -285,7 +291,8 @@
               @if (entry.pubkey) {
               <div class="log-pubkey">
                 <span class="pubkey-label">Pubkey:</span>
-                <span class="pubkey-value" (click)="setLogPubkeyFilter(entry.pubkey)" title="Filter by this pubkey">{{ entry.pubkey }}</span>
+                <span class="pubkey-value" (click)="setLogPubkeyFilter(entry.pubkey)" title="Filter by this pubkey">{{
+                  entry.pubkey }}</span>
               </div>
               }
               @if (entry.details) {
@@ -340,9 +347,9 @@
       <div class="modal-body qr-code-container">
         <!-- Display locally generated QR code -->
         @if (qrCodeDataUrl()) {
-          <img [src]="qrCodeDataUrl()" alt="QR Code" class="qr-code-image">
+        <img [src]="qrCodeDataUrl()" alt="QR Code" class="qr-code-image">
         }
-        
+
       </div>
       <p class="qr-code-hint">Scan this code with your Nostr client</p>
       <div class="modal-footer">
@@ -362,17 +369,13 @@
       </div>
       <div class="modal-body">
         <p>Enter your private key in nsec or hex format:</p>
-        <input 
-          type="text" 
-          [ngModel]="importKeyValue()" 
-          (ngModelChange)="importKeyValue.set($event)" 
-          class="import-input" 
-          placeholder="nsec1... or hex private key" />
-        
+        <input type="text" [ngModel]="importKeyValue()" (ngModelChange)="importKeyValue.set($event)"
+          class="import-input" placeholder="nsec1... or hex private key" />
+
         @if (importError()) {
         <div class="error-message">{{ importError() }}</div>
         }
-        
+
         @if (importSuccess()) {
         <div class="success-message">Successfully imported! Redirecting...</div>
         }
@@ -388,14 +391,15 @@
   <app-theme-switcher></app-theme-switcher>
 
   <!-- Add storage security notification -->
-  <div class="storage-security-notification" [class.warning]="isSecureStorage() === false" [class.secure]="isSecureStorage() === true">
+  <div class="storage-security-notification" [class.warning]="isSecureStorage() === false"
+    [class.secure]="isSecureStorage() === true">
     <div class="notification-icon">
       @if (isSecureStorage() === true) {
-        <span>🔒</span>
+      <span>🔒</span>
       } @else if (isSecureStorage() === false) {
-        <span>⚠️</span>
+      <span>⚠️</span>
       } @else {
-        <span>⌛</span>
+      <span>⌛</span>
       }
     </div>
     <div class="notification-message">
@@ -407,26 +411,40 @@
   <div class="weblock-notification" [class.active]="webLockActive()">
     <div class="notification-icon">
       @if (webLockActive()) {
-        <span>⚡</span>
+      <span>⚡</span>
       } @else if (webLockSupported) {
-        <span>💤</span>
+      <span>💤</span>
       } @else {
-        <span>❌</span>
+      <span>❌</span>
       }
     </div>
     <div class="notification-message">
       @if (!webLockSupported) {
-        Wake Lock is not supported in your browser. Screen may turn off when inactive.
+      Wake Lock is not supported in your browser. Screen may turn off when inactive.
       } @else if (webLockActive()) {
-        Wake Lock active: Screen will stay awake while app is running.
+      Wake Lock active: Screen will stay awake while app is running.
       } @else {
-        Wake Lock inactive: Screen may turn off when not in use.
+      Wake Lock inactive: Screen may turn off when not in use.
       }
     </div>
     @if (webLockSupported) {
-      <button class="wake-lock-toggle" (click)="toggleWebLock()">
-        {{ webLockActive() ? 'Disable' : 'Enable' }}
-      </button>
+    <button class="wake-lock-toggle" (click)="toggleWebLock()">
+      {{ webLockActive() ? 'Disable' : 'Enable' }}
+    </button>
     }
+
+    <button (click)="notificationTrigger()">Notification trigger</button>
+
   </div>
+
+  <div class="weblock-notification active">
+    <div class="notification-icon">
+      <span>⚡</span>
+    </div>
+    <div class="notification-message">
+      Notification Lock: Screen will stay awake while app is running.
+    </div>
+    <button class="wake-lock-toggle" (click)="notificationTrigger()">Enable notification</button>
+  </div>
+
 </div>

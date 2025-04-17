@@ -121,16 +121,49 @@ fn delete_private_key(public_key: &str) -> KeyResponse {
     }
 }
 
+// #[cfg(target_os = "android")]
+// #[tauri::command]
+// async fn start_foreground_service() -> Result<(), String> {
+//     use tauri_plugin_notification::NotificationBuilder;
+//     match NotificationBuilder::new("app.nostria.signer")
+//         .title("Nostria Signer")
+//         .body("Running in background")
+//         .icon("icons/32x32.png")
+//         .ongoing(true)  // Makes the notification persistent (cannot be dismissed)
+//         .show() {
+//             Ok(_) => Ok(()),
+//             Err(e) => Err(e.to_string()),
+//         }
+// }
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![
+        .plugin(tauri_plugin_notification::init());
+    
+    // Add platform-specific invoke handlers
+    #[cfg(target_os = "android")]
+    {
+        builder = builder.invoke_handler(tauri::generate_handler![
+            save_private_key,
+            get_private_key,
+            delete_private_key,
+            // start_foreground_service
+        ]);
+    }
+    
+    #[cfg(not(target_os = "android"))]
+    {
+        builder = builder.invoke_handler(tauri::generate_handler![
             save_private_key,
             get_private_key,
             delete_private_key
-        ])
+        ]);
+    }
+
+    builder
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
