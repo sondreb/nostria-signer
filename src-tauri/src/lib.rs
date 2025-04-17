@@ -11,6 +11,11 @@ struct KeyResponse {
 }
 
 #[tauri::command]
+fn ping() -> String {
+    "pong".to_string()
+}
+
+#[tauri::command]
 fn save_private_key(public_key: &str, private_key: &str) -> KeyResponse {
     // Define service and username for the keyring entry
     let service = "nostria-signer";
@@ -138,32 +143,58 @@ fn delete_private_key(public_key: &str) -> KeyResponse {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let mut builder = tauri::Builder::default()
-        .plugin(tauri_plugin_os::init())
-        .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_notification::init());
-    
+ 
     // Add platform-specific invoke handlers
     #[cfg(target_os = "android")]
     {
+        let mut builder = tauri::Builder::default()
+        .plugin(tauri_plugin_os::init())
+        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_notification::init());
+
         builder = builder.invoke_handler(tauri::generate_handler![
             save_private_key,
             get_private_key,
             delete_private_key,
+            ping
             // start_foreground_service
         ]);
+
+        builder
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
     }
     
     #[cfg(not(target_os = "android"))]
     {
+        use tauri::{Manager};
+    
+        #[derive(Clone, serde::Serialize)]
+        struct Payload {
+            args: Vec<String>,
+            cwd: String,
+        }
+
+        let mut builder = tauri::Builder::default()
+        .plugin(tauri_plugin_os::init())
+        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
+            println!("{}, {argv:?}, {cwd}", app.package_info().name);
+            app.emit("single-instance", Payload { args: argv, cwd }).unwrap();
+        }))
+        .plugin(tauri_plugin_notification::init());
+
         builder = builder.invoke_handler(tauri::generate_handler![
             save_private_key,
             get_private_key,
-            delete_private_key
+            delete_private_key,
+            ping
         ]);
-    }
 
-    builder
+        builder
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+    }
+
+
 }

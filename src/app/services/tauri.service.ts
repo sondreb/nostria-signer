@@ -15,11 +15,16 @@ export class TauriService {
     useBrowserStorage = signal<boolean>(true); // Default to browser storage for safety
     initialized = signal<boolean>(false); // Track initialization status
     private isRunningInTauri = isTauri();
-    private isAndroid = signal<boolean>(false);
+    isAndroid = signal<boolean>(false);
     private readonly STORAGE_KEY = 'nostria-signer-keys';
 
     constructor() {
         this.initializePlatform();
+    }
+
+    async ping() {
+        const result: any = await invoke("ping");
+        return result;
     }
 
     private async initializePlatform() {

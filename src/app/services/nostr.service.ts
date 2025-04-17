@@ -47,10 +47,10 @@ export class NostrService {
 
   // Track connection status
   connectionStatus = signal<'connected' | 'disconnected' | 'connecting'>('disconnected');
-  
+
   // Store last connection attempt timestamp
   private lastConnectionAttempt = signal<number>(0);
-  
+
   // Track relay connection health check interval
   private connectionCheckInterval: any = null;
 
@@ -98,13 +98,20 @@ export class NostrService {
     await this.loadClientKeys();
 
     this.connect();
-    
+
     // Start connection monitoring
     this.startConnectionMonitoring();
 
     // Mark this service as initialized
     this.serviceInitialized.set(true);
     console.log('NostrService initialization complete');
+
+    // setInterval(async () => {
+    //   const result = await this.tauriService.ping();
+    //   console.log('Got pong:', result);
+    //   console.log('Pinged Tauri service. Verifying connection...');
+    //   this.connect();
+    // }, 2000);
   }
 
   hasAccount(): boolean {
@@ -136,7 +143,7 @@ export class NostrService {
           this.checkAndReconnectIfNeeded();
         }
       });
-      
+
       // For mobile apps, we can also listen for resume events
       window.addEventListener('focus', () => {
         console.log('Window got focus, checking connection status');
@@ -151,15 +158,16 @@ export class NostrService {
     if (this.connectionCheckInterval) {
       clearInterval(this.connectionCheckInterval);
     }
-    
+
     // Check connection every 30 seconds
     this.connectionCheckInterval = setInterval(() => {
       this.checkAndReconnectIfNeeded();
-    }, 30000); // 30 seconds
+    }, 10000); // 10 seconds
   }
 
   // Check connection status and reconnect if needed
   private checkAndReconnectIfNeeded(): void {
+    console.log('Checking connection...');
     // Only try to reconnect if we're not already connecting and have an account
     if (this.connectionStatus() !== 'connecting' && this.account()) {
       // Check if we have pool and if it's connected
@@ -169,7 +177,7 @@ export class NostrService {
           LogType.CONNECTION,
           'Connection appears to be down, attempting to reconnect'
         );
-        
+
         // Only reconnect if it's been at least 5 seconds since last attempt
         // This prevents reconnection storms
         const now = Date.now();
@@ -185,7 +193,7 @@ export class NostrService {
   private isConnected(): boolean {
     // If no pool exists, we're definitely not connected
     if (!this.pool) return false;
-    
+
     // In a real implementation, you might want to add more sophisticated checks
     // like recent event timestamps or a ping-pong mechanism
     return this.connectionStatus() === 'connected';
@@ -339,11 +347,16 @@ export class NostrService {
   }
 
   connect() {
+    if (this.connectionStatus() === 'connected') {
+      return;
+    }
+
     // Set connecting state
     this.connectionStatus.set('connecting');
-    
+
     // Close existing pool if it exists
     if (this.pool) {
+      console.log('POOL CLOSE IN CONNECT!');
       this.pool.close(this.relays);
     }
 
@@ -375,7 +388,7 @@ export class NostrService {
           onclose: (reasons) => {
             console.log('Pool closed', reasons);
             this.connectionStatus.set('disconnected');
-            
+
             // Attempt to reconnect after a short delay
             setTimeout(() => {
               this.checkAndReconnectIfNeeded();
@@ -383,7 +396,7 @@ export class NostrService {
           },
         }
       );
-      
+
       // Set connected state - we'll assume it worked for now
       this.connectionStatus.set('connected');
     } else {
@@ -1080,9 +1093,10 @@ export class NostrService {
       clearInterval(this.connectionCheckInterval);
       this.connectionCheckInterval = null;
     }
-    
+
     // Close pool connections
     if (this.pool) {
+      console.log('POOL CLOSE IN CLEANUP!');
       this.pool.close(this.relays);
     }
   }

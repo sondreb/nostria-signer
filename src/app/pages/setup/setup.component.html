@@ -432,10 +432,18 @@
       {{ webLockActive() ? 'Disable' : 'Enable' }}
     </button>
     }
-
-    <button (click)="notificationTrigger()">Notification trigger</button>
-
   </div>
+
+  @if(tauriService.isAndroid()) {
+    <div class="weblock-notification active">
+      <div class="notification-icon">
+        <span>⚠️</span>
+      </div>
+      <div class="notification-message">
+        On Android devices, this application must be kept open and visible to work. If you hide it, it will stop accepting requests.
+      </div>
+    </div>
+  }
 
   <div class="weblock-notification active">
     <div class="notification-icon">
@@ -444,7 +452,8 @@
     <div class="notification-message">
       Notification Lock: Screen will stay awake while app is running.
     </div>
-    <button class="wake-lock-toggle" (click)="notificationTrigger()">Enable notification</button>
+    <button class="wake-lock-toggle" (click)="enableNotification()">Enable notification (5 seconds)</button>
+    <button class="wake-lock-toggle" (click)="disableNotification()">Disable notification</button>
   </div>
 
 </div>

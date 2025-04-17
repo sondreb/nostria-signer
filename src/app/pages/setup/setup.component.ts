@@ -15,8 +15,13 @@ import QRCode from 'qrcode';
 import { Router } from '@angular/router';
 import { WebLockService } from '../../services/web-lock.service';
 import {
+  cancelAll,
   isPermissionGranted,
+  removeAllActive,
   requestPermission,
+  Schedule,
+  ScheduleEvery,
+  ScheduleInterval,
   sendNotification
 } from '@tauri-apps/plugin-notification'
 
@@ -32,7 +37,7 @@ export class SetupComponent {
   private uiService = inject(UiService);
   private toastService = inject(ToastService);
   private logService = inject(LogService);
-  private tauriService = inject(TauriService);
+  tauriService = inject(TauriService);
   private router = inject(Router);
   private webLockService = inject(WebLockService);
 
@@ -122,14 +127,23 @@ export class SetupComponent {
     return true;
   }
 
-  async notificationTrigger() {
+  async disableNotification() {
+    cancelAll();
+    removeAllActive();
+  }
+
+  async enableNotification() {
     let title = 'Nostria Signer';
     let body = 'Attempt to keep running in the background.';
 
     if (!(await this.checkPermission())) {
       return
     }
-    sendNotification({ title, body, ongoing: true })
+
+    // const schedule = Schedule.interval('second', 5);
+    const schedule = Schedule.every(ScheduleEvery.Second, 5, true);
+
+    sendNotification({ title, body, ongoing: true, schedule: schedule });
   }
 
   async importKey(): Promise<void> {
