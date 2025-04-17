@@ -53,11 +53,23 @@ export class SetupComponent {
   isSecureStorage = signal<boolean | null>(null);
 
   constructor() {
+    effect(async () => {
+      if (this.nostrService.serviceInitialized()) {
+
+        if (!this.nostrService.hasAccount()) {
+          this.router.navigate(['/']);
+          return;
+        }
+
+        await this.initializeComponent();
+      }
+    });
+
     effect(() => {
       if (this.showQrModal() && this.currentQrActivation()) {
         const activation = this.currentQrActivation();
-        const stillPending = this.nostrService.clientActivations().some(a => 
-          a.clientPubkey === 'pending' && 
+        const stillPending = this.nostrService.clientActivations().some(a =>
+          a.clientPubkey === 'pending' &&
           a.secret === activation?.secret &&
           a.pubkey === activation?.pubkey
         );
@@ -68,10 +80,14 @@ export class SetupComponent {
           this.logService.addEntry(LogType.CONNECTION, 'Client connected successfully');
         }
       }
+
+      // Update secure storage status display
+      this.isSecureStorage.set(!this.tauriService.useBrowserStorage());
     });
   }
 
-  ngOnInit() {
+  async initializeComponent(): Promise<void> {
+    // Wait for NostrService to complete initialization
     this.relays.set([...this.nostrService.relays]);
   }
 
@@ -234,8 +250,8 @@ export class SetupComponent {
   deleteActivation(activation: ClientActivation) {
     if (confirm('Are you sure you want to delete this activation?')) {
       this.nostrService.deleteActivation(
-        activation.clientPubkey, 
-        activation.pubkey, 
+        activation.clientPubkey,
+        activation.pubkey,
         activation.secret!
       );
       this.toastService.show('Activation revoked successfully', 'success');
@@ -273,9 +289,9 @@ export class SetupComponent {
     currentEditing[activationId] = false;
     this.editingPermissions.set(currentEditing);
     this.toastService.show('Permissions updated successfully', 'success');
-    this.logService.addEntry(LogType.CONNECTION, 'Permissions updated', { 
-      activation, 
-      newPermissions 
+    this.logService.addEntry(LogType.CONNECTION, 'Permissions updated', {
+      activation,
+      newPermissions
     });
   }
 

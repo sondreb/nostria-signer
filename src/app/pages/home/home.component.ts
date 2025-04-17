@@ -30,14 +30,16 @@ export class HomeComponent {
   theme = this.uiService.theme;
 
   constructor() {
-    effect(() => {
-      if (this.nostrService.hasAccount() && !this.loading()) {
-        this.router.navigate(['/setup']);
+    effect(async () => {
+      if (this.nostrService.serviceInitialized()) {
+
+        await this.initializeComponent();
+
+        if (this.nostrService.hasAccount() && !this.loading()) {
+          this.router.navigate(['/setup']);
+        }
       }
     });
-
-    // Initialize component
-    this.initializeComponent();
   }
 
   private async initializeComponent(): Promise<void> {

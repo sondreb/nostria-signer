@@ -1,4 +1,4 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, inject, signal, effect } from '@angular/core';
 import { Router } from '@angular/router';
 import { Event, EventTemplate, finalizeEvent, generateSecretKey, getPublicKey, UnsignedEvent } from 'nostr-tools/pure';
 import { v4 as uuidv4 } from 'uuid';
@@ -57,11 +57,19 @@ export class NostrService {
 
   private accountExists = signal<boolean>(false);
 
+  // New signal to track service initialization
+  serviceInitialized = signal<boolean>(false);
+
   constructor(
     private logService: LogService
   ) {
-    // Initialize the app
-    this.initialize();
+    effect(async () => {
+      if (this.tauriService.initialized()) {
+        // Initialize the app
+        await this.initialize();
+      }
+    });
+
   }
 
   // Initialize the app asynchronously
@@ -79,6 +87,10 @@ export class NostrService {
     await this.loadClientKeys();
 
     this.connect();
+
+    // Mark this service as initialized
+    this.serviceInitialized.set(true);
+    console.log('NostrService initialization complete');
   }
 
   hasAccount(): boolean {
@@ -309,7 +321,7 @@ export class NostrService {
         // The content of evt is a NIP-44 encrypted event, decrypt it:
         const convKey = v2.utils.getConversationKey(privateKey, evt.pubkey);
         decrypted = v2.decrypt(evt.content, convKey);
-        console.log('Decrypted content:', decrypted); 
+        console.log('Decrypted content:', decrypted);
       } else {
         decrypted = decrypt(privateKey, evt.pubkey, evt.content);
         nip4 = true;
@@ -562,11 +574,11 @@ export class NostrService {
 
       if (clientActivation.nip4) {
         encryptedContent = encrypt(privateKey, pubkey, JSON.stringify(response));
-       } else {
+      } else {
         const convKey = v2.utils.getConversationKey(privateKey, pubkey);
         encryptedContent = v2.encrypt(JSON.stringify(response), convKey);
       }
-  
+
       const responseEvent: UnsignedEvent = {
         kind: kinds.NostrConnect,
         pubkey: this.account()!.publicKey,
@@ -599,13 +611,13 @@ export class NostrService {
   // Load client keys from localStorage and secure storage
   private async loadClientKeys(): Promise<void> {
     const keysStorage = localStorage.getItem(STORAGE_KEYS.SIGNER_KEYS);
-    
+
     if (keysStorage) {
       try {
         // Parse stored keys
         const storedKeys = JSON.parse(keysStorage);
         const validKeys: NostrAccount[] = [];
-        
+
         // For each key, try to get the private key from secure storage
         for (const keyMeta of storedKeys) {
           if (this.tauriService.useBrowserStorage()) {
@@ -619,7 +631,7 @@ export class NostrService {
           } else {
             // Try to get private key from secure storage
             const privateKey = await this.tauriService.getPrivateKey(keyMeta.publicKey);
-            
+
             if (privateKey) {
               // If we got the key from secure storage, use it
               validKeys.push({
@@ -632,13 +644,13 @@ export class NostrService {
                 publicKey: keyMeta.publicKey,
                 privateKey: keyMeta.privateKey
               });
-              
+
               // Try to store it securely for future use
               await this.tauriService.savePrivateKey(keyMeta.publicKey, keyMeta.privateKey);
             }
           }
         }
-        
+
         this.keys.set(validKeys);
       } catch (e) {
         console.error('Error parsing stored keys:', e);
@@ -655,7 +667,7 @@ export class NostrService {
     if (signerKeyString) {
       try {
         const signerKey = JSON.parse(signerKeyString);
-        
+
         if (this.tauriService.useBrowserStorage()) {
           // If using browser storage, just use the key as it is
           if (signerKey.privateKey) {
@@ -666,7 +678,7 @@ export class NostrService {
         } else {
           // Try to get the private key from secure storage first
           const privateKey = await this.tauriService.getPrivateKey(signerKey.publicKey);
-          
+
           if (privateKey) {
             // If found in secure storage, use it
             this.account.set({
@@ -694,15 +706,17 @@ export class NostrService {
   // Save the signer key to localStorage and secure storage if available
   private async saveSignerKey(account: NostrAccount): Promise<void> {
     // Try to store private key securely
-    const securelyStored = await this.tauriService.savePrivateKey(account.publicKey, account.privateKey);
-    
+    await this.tauriService.savePrivateKey(account.publicKey, account.privateKey);
+
+    debugger;
+
     // Store in localStorage, either with or without privateKey based on secure storage success
     localStorage.setItem(STORAGE_KEYS.SIGNER_KEY, JSON.stringify(
-      securelyStored ? 
-        { publicKey: account.publicKey, secret: account.secret } : 
-        account
+      this.tauriService.useBrowserStorage() ?
+        account : // When using browser storage, store full account with privateKey
+        { publicKey: account.publicKey, secret: account.secret } // When using secure storage, don't store privateKey in localStorage
     ));
-    
+
     this.account.set(account);
   }
 
@@ -721,22 +735,22 @@ export class NostrService {
       };
 
       // Try to store private key securely
-      const securelyStored = await this.tauriService.savePrivateKey(publicKeyClient, privateKeyHex);
-      
+      await this.tauriService.savePrivateKey(publicKeyClient, privateKeyHex);
+
       // Update in-memory state
       this.keys.update(array => [...array, keyPairClient]);
-      
+
       // Save to localStorage, either with or without privateKey based on secure storage success
       const keysForStorage = this.keys().map(key => {
-        if (securelyStored && key.publicKey === publicKeyClient) {
+        if (this.tauriService.useBrowserStorage() && key.publicKey === publicKeyClient) {
           // If this is the key we just generated and it was securely stored, 
           // don't include privateKey in localStorage
           return { publicKey: key.publicKey };
         }
         return key;
       });
-      
-      localStorage.setItem(STORAGE_KEYS.SIGNER_KEYS, JSON.stringify(keysForStorage));
+
+      localStorage.setItem(STORAGE_KEYS.SIGNER_KEYS, JSON.stringify(this.keys()));
 
       // Log the new client key generation
       this.logService.addEntry(
@@ -766,9 +780,11 @@ export class NostrService {
         secret
       };
 
+      debugger;
+
       // Save as signer key
       await this.saveSignerKey(keyPair);
-      
+
       // Log the signer key generation
       this.logService.addEntry(
         LogType.KEY_GENERATED,
@@ -876,11 +892,11 @@ export class NostrService {
     for (const key of this.keys()) {
       await this.tauriService.deletePrivateKey(key.publicKey);
     }
-    
+
     if (this.account()) {
       await this.tauriService.deletePrivateKey(this.account()!.publicKey);
     }
-    
+
     // Clear in-memory state and localStorage
     this.keys.set([]);
     this.account.set(null);
@@ -897,10 +913,10 @@ export class NostrService {
   async deleteKey(publicKey: string): Promise<void> {
     // Try to remove from secure storage
     await this.tauriService.deletePrivateKey(publicKey);
-    
+
     // Update in-memory state
     this.keys.update(keys => keys.filter(key => key.publicKey !== publicKey));
-    
+
     // Update localStorage
     localStorage.setItem(STORAGE_KEYS.SIGNER_KEYS, JSON.stringify(this.keys()));
 

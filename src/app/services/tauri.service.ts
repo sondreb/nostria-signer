@@ -1,10 +1,11 @@
-import { Injectable, inject, signal } from "@angular/core";
+import { Injectable, inject, signal, effect, assertInInjectionContext, EffectRef } from "@angular/core";
 import { invoke } from "@tauri-apps/api/core";
 import { getVersion } from '@tauri-apps/api/app';
 import { isTauri } from "@tauri-apps/api/core";
+import { platform, version } from '@tauri-apps/plugin-os';
 
 interface KeyStorage {
-  [key: string]: string;
+    [key: string]: string;
 }
 
 @Injectable({
@@ -12,48 +13,98 @@ interface KeyStorage {
 })
 export class TauriService {
     useBrowserStorage = signal<boolean>(true); // Default to browser storage for safety
+    initialized = signal<boolean>(false); // Track initialization status
     private isRunningInTauri = isTauri();
+    private isAndroid = signal<boolean>(false);
     private readonly STORAGE_KEY = 'nostria-signer-keys';
-    
+
     constructor() {
+        this.initializePlatform();
+    }
+
+    private async initializePlatform() {
+        debugger;
+
+        if (this.isRunningInTauri) {
+
+            console.log('Platform:', platform());
+            console.log('Version:', version());
+        }
         console.log('Nostria Signer in native mode:', this.isRunningInTauri);
 
         if (this.isRunningInTauri) {
-            this.useBrowserStorage.set(false);
+            try {
+                // Check if we're running on Android using Tauri v2 API
+                const osType = platform();
+                this.isAndroid.set(osType.toLowerCase() === 'android');
+
+                // Android doesn't support secure keyring storage, so use browser storage
+                if (this.isAndroid()) {
+                    console.log('Running on Android, using browser storage');
+                    this.useBrowserStorage.set(true);
+                } else {
+                    console.log('Running on desktop, using secure storage');
+                    this.useBrowserStorage.set(false);
+                }
+            } catch (error) {
+                console.error('Error detecting platform:', error);
+                this.useBrowserStorage.set(true); // Fallback to browser storage on error
+            }
         }
+
+        // Mark initialization as complete
+        this.initialized.set(true);
+        console.log('TauriService initialization complete');
     }
 
-    async savePrivateKey(publicKey: string, privateKey: string): Promise<boolean> {
-        // First attempt to use secure storage if in Tauri mode
-        if (!this.useBrowserStorage() && this.isRunningInTauri) {
+    /**
+     * Creates an effect that runs the provided callback when this service is initialized.
+     * @param callback The function to run when initialized
+     * @returns An EffectRef that can be used to destroy the effect
+     */
+    onInitialized(callback: () => void): EffectRef {
+        // Assert we're in an injection context (component, directive, pipe, or service)
+        assertInInjectionContext(this.onInitialized);
+
+        // Create an effect that watches the initialized signal
+        return effect(() => {
+            if (this.initialized()) {
+                callback();
+            }
+        });
+    }
+
+    async savePrivateKey(publicKey: string, privateKey: string) {
+        // Use secure storage only if in Tauri mode AND not on Android
+        if (!this.useBrowserStorage()) {
             try {
                 console.log('Attempting to save key in secure storage');
                 const result: any = await invoke("save_private_key", { publicKey, privateKey });
 
                 if (result.success) {
                     console.log('Successfully saved key in secure storage');
-                    return true;
                 } else {
                     console.error('Secure storage failed:', result.message);
-                    this.useBrowserStorage.set(true); // Fall back to browser storage
+                    this.useBrowserStorage.set(true);
                     console.log('Falling back to browser storage');
                     // Continue to browser storage fallback
                 }
             } catch (error) {
                 console.error('Error saving private key in secure storage:', error);
-                this.useBrowserStorage.set(true); // Fall back to browser storage
+                this.useBrowserStorage.set(true);
                 console.log('Falling back to browser storage due to error');
                 // Continue to browser storage fallback
             }
         }
 
-        // Fallback to browser storage or direct browser storage use
-        return this.saveToBrowserStorage(publicKey, privateKey);
+        if (this.useBrowserStorage()) {
+            this.saveToBrowserStorage(publicKey, privateKey);
+        }
     }
 
-    async getPrivateKey(publicKey: string): Promise<string | null> {
-        // First attempt to use secure storage if in Tauri mode
-        if (!this.useBrowserStorage() && this.isRunningInTauri) {
+    async getPrivateKey(publicKey: string) {
+        // Use secure storage only if in Tauri mode AND not on Android
+        if (!this.useBrowserStorage()) {
             try {
                 console.log('Attempting to get key from secure storage');
                 const result: any = await invoke("get_private_key", { publicKey });
@@ -75,20 +126,19 @@ export class TauriService {
             }
         }
 
-        // Fallback to browser storage or direct browser storage use
-        return this.getFromBrowserStorage(publicKey);
+        if (this.useBrowserStorage()) {
+            // Fallback to browser storage or direct browser storage use
+            return this.getFromBrowserStorage(publicKey);
+        }
     }
 
-    async deletePrivateKey(publicKey: string): Promise<boolean> {
-        let secureDeleteSuccess = false;
-        
-        // First attempt to delete from secure storage if in Tauri mode
-        if (!this.useBrowserStorage() && this.isRunningInTauri) {
+    async deletePrivateKey(publicKey: string) {
+        // Use secure storage only if in Tauri mode AND not on Android
+        if (!this.useBrowserStorage()) {
             try {
                 console.log('Attempting to delete key from secure storage');
                 const result: any = await invoke("delete_private_key", { publicKey });
-                secureDeleteSuccess = result.success;
-                
+
                 if (result.success) {
                     console.log('Successfully deleted key from secure storage');
                 }
@@ -97,25 +147,23 @@ export class TauriService {
                 this.useBrowserStorage.set(true);
             }
         }
-        
-        // Always try to delete from browser storage as well
-        // This ensures we clean up browser storage even if we've been using secure storage
-        const browserDeleteSuccess = this.deleteFromBrowserStorage(publicKey);
-        
-        // Return true if either deletion was successful
-        return secureDeleteSuccess || browserDeleteSuccess;
+
+        if (this.useBrowserStorage()) {
+            // Always try to delete from browser storage as well
+            // This ensures we clean up browser storage even if we've been using secure storage
+            this.deleteFromBrowserStorage(publicKey);
+        }
     }
-    
-    // Private helper methods for browser storage
+
     private saveToBrowserStorage(publicKey: string, privateKey: string): boolean {
         try {
             let storage: KeyStorage = {};
             const existingData = localStorage.getItem(this.STORAGE_KEY);
-            
+
             if (existingData) {
                 storage = JSON.parse(existingData);
             }
-            
+
             storage[publicKey] = privateKey;
             localStorage.setItem(this.STORAGE_KEY, JSON.stringify(storage));
             console.log('Successfully saved key in browser storage');
@@ -125,19 +173,19 @@ export class TauriService {
             return false;
         }
     }
-    
+
     private getFromBrowserStorage(publicKey: string): string | null {
         try {
             const existingData = localStorage.getItem(this.STORAGE_KEY);
-            
+
             if (!existingData) {
                 console.log('No keys found in browser storage');
                 return null;
             }
-            
+
             const storage: KeyStorage = JSON.parse(existingData);
             const privateKey = storage[publicKey];
-            
+
             if (privateKey) {
                 console.log('Successfully retrieved key from browser storage');
                 return privateKey;
@@ -150,21 +198,21 @@ export class TauriService {
             return null;
         }
     }
-    
+
     private deleteFromBrowserStorage(publicKey: string): boolean {
         try {
             const existingData = localStorage.getItem(this.STORAGE_KEY);
-            
+
             if (!existingData) {
                 return false;
             }
-            
+
             const storage: KeyStorage = JSON.parse(existingData);
-            
+
             if (!(publicKey in storage)) {
                 return false;
             }
-            
+
             delete storage[publicKey];
             localStorage.setItem(this.STORAGE_KEY, JSON.stringify(storage));
             console.log('Successfully deleted key from browser storage');
