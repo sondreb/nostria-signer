@@ -1,6 +1,6 @@
 [package]
 name = "nostria-signer"
-version = "0.1.7"
+version = "0.1.8"
 description = "Nostria Signer - Remote Signer for Nostr"
 authors = ["brainbox.no"]
 edition = "2021"
