@@ -167,8 +167,6 @@ pub fn run() {
     
     #[cfg(not(target_os = "android"))]
     {
-        use tauri::{Manager};
-    
         #[derive(Clone, serde::Serialize)]
         struct Payload {
             args: Vec<String>,
